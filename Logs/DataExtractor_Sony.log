@@ -1,0 +1,58 @@
+10/08/2017 16:00:25 : -----------------------------------------------------------------------
+10/08/2017 16:00:25 : Process started
+10/08/2017 16:00:25 : -----------------------------------------------------------------------
+10/08/2017 16:00:25 : Processing partner Oxfordshire CC ().
+10/08/2017 16:00:25 : Selecting partner boundary and retrieving information for partner Oxfordshire CC.
+10/08/2017 16:00:25 : Processing SQL layers for partner Oxfordshire CC.
+10/08/2017 16:00:25 : Opening SQL connection
+10/08/2017 16:00:25 : Deleting temporary tables
+10/08/2017 16:00:25 : Closing SQL connection
+10/08/2017 16:00:25 : Processing GIS layers for partner Oxfordshire CC.
+10/08/2017 16:00:25 : Processing layer AncientWoodland to create the output layer AWL.
+10/08/2017 16:00:25 : Selecting features in layer AncientWoodland that intersect partner boundary.
+10/08/2017 16:00:26 : Creating subset selection for layer AncientWoodland using attribute query:
+10/08/2017 16:00:26 : "STATUS" = 'PAWS'
+10/08/2017 16:00:26 : There are 506 features selected in AncientWoodland.
+10/08/2017 16:00:26 : Exporting selection to GIS file: H:\Data\Thames\ExtractorExtracts\OCC\AWL.shp.
+10/08/2017 16:00:27 : Removing non-required fields from the output file.
+10/08/2017 16:00:27 : Exporting CSV file to H:\Data\Thames\ExtractorExtracts\OCC\AWL.csv
+10/08/2017 16:00:27 : Extracted AWL from AncientWoodland for partner Oxfordshire CC.
+10/08/2017 16:00:27 : Process complete for GIS layer AncientWoodland for partner Oxfordshire CC.
+10/08/2017 16:00:27 : Process complete for partner Oxfordshire CC
+10/08/2017 16:00:27 : Processing partner Slough ().
+10/08/2017 16:00:27 : Selecting partner boundary and retrieving information for partner Slough.
+10/08/2017 16:00:27 : Processing SQL layers for partner Slough.
+10/08/2017 16:00:27 : Opening SQL Connection
+10/08/2017 16:00:27 : Executing stored procedure to make spatial / tags selection.
+10/08/2017 16:00:36 : Species table is TVERC_Spp_Full_Sony
+10/08/2017 16:00:36 : Column names are TaxonName, CommonName, TaxonClass, TaxonGroup, TaxonOrder, SP_GEOMETRY
+10/08/2017 16:00:36 : Spatial column is SP_GEOMETRY
+10/08/2017 16:00:36 : User ID is Sony
+10/08/2017 16:00:36 : Output base name is TVERC_Spp_Full_Sony
+10/08/2017 16:00:36 : Where clause is RecYear >= 1985 AND (NegativeRec <> 'Y' OR NegativeRec IS NULL) AND GRPrecision <= 100 AND GridRef IS NOT NULL AND VagueDateStart IS NOT NULL AND Recorder IS NOT NULL AND TaxonName <> 'Homo sapiens' AND Verification <> 'Considered incorrect'
+10/08/2017 16:00:36 : Data is spatial and will be split into a point and a polygon layer
+10/08/2017 16:00:36 : Opening SQL Connection
+10/08/2017 16:00:36 : Executing stored procedure
+10/08/2017 16:00:38 : Procedure returned 32908 point and 0 polygon records
+10/08/2017 16:00:38 : Closing SQL Connection
+10/08/2017 16:00:38 : Exporting point selection to GIS file: H:\Data\Thames\ExtractorExtracts\Sl\TVERC_AllSpp_S_point.shp.
+10/08/2017 16:01:21 : Copying point results to tab delimited fileH:\Data\Thames\ExtractorExtracts\Sl\TVERC_AllSpp_S.txt
+10/08/2017 16:01:23 : Opening SQL connection
+10/08/2017 16:01:23 : Deleting temporary tables
+10/08/2017 16:01:23 : Closing SQL connection
+10/08/2017 16:01:23 : Extracted TVERC_AllSpp_S from TVERC_Spp_Full for partner Slough.
+10/08/2017 16:01:23 : Opening SQL connection
+10/08/2017 16:01:23 : Deleting temporary tables
+10/08/2017 16:01:23 : Closing SQL connection
+10/08/2017 16:01:23 : Processing GIS layers for partner Slough.
+10/08/2017 16:01:23 : Processing layer AncientWoodland to create the output layer AWL.
+10/08/2017 16:01:23 : Selecting features in layer AncientWoodland that intersect partner boundary.
+10/08/2017 16:01:23 : Creating subset selection for layer AncientWoodland using attribute query:
+10/08/2017 16:01:23 : "STATUS" = 'PAWS'
+10/08/2017 16:01:23 : There are 3 features selected in AncientWoodland.
+10/08/2017 16:01:23 : Exporting selection to GIS file: H:\Data\Thames\ExtractorExtracts\Sl\AWL.shp.
+10/08/2017 16:01:23 : Removing non-required fields from the output file.
+10/08/2017 16:01:23 : Exporting TXT file to H:\Data\Thames\ExtractorExtracts\Sl\AWL.txt
+10/08/2017 16:01:23 : Extracted AWL from AncientWoodland for partner Slough.
+10/08/2017 16:01:23 : Process complete for GIS layer AncientWoodland for partner Slough.
+10/08/2017 16:01:23 : Process complete for partner Slough
