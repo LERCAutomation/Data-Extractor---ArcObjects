@@ -19,3 +19,15 @@ H:\Dev\LERCAutomation\DataExtractor-ArcObjects\DataExtractor\DataExtractor3\obj\
 H:\Dev\LERCAutomation\DataExtractor-ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.csproj.ResolveComReference.cache
 H:\Dev\LERCAutomation\DataExtractor-ArcObjects\DataExtractor\DataExtractor3\bin\Debug\Interop.Shell32.dll
 H:\Dev\LERCAutomation\DataExtractor-ArcObjects\DataExtractor\DataExtractor3\bin\Debug\DataExtractor3.esriAddIn
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Debug\DataExtractor3.dll.config
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Debug\DataExtractor3.dll
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Debug\DataExtractor3.pdb
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Debug\Interop.Shell32.dll
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.csprojResolveAssemblyReference.cache
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\Interop.Shell32.dll
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.csproj.ResolveComReference.cache
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.frmDataExtractor.resources
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.csproj.GenerateResource.Cache
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.dll
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Debug\DataExtractor3.pdb
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Debug\DataExtractor3.esriAddIn

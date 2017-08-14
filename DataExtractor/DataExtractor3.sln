@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2012 for Windows Desktop
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataExtractor3", "DataExtractor3\DataExtractor3.csproj", "{C37767BB-18E6-4743-A5EC-1D7F2B38F487}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataExtractor", "DataExtractor3\DataExtractor.csproj", "{C37767BB-18E6-4743-A5EC-1D7F2B38F487}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -120,11 +120,17 @@ used by the MapBasic tool to select and export data for partners.
 	<value>ExportFormat</value>
   </ExportColumn>
 
-  <!-- The name of the column in the partner GIS layer indicating which files should be
+  <!-- The name of the column in the partner GIS layer indicating which SQL files should be
        created for each partner -->
-  <FilesColumn>
-	<value>Files</value>
-  </FilesColumn>
+  <SQLFilesColumn>
+	<value>SQLFiles</value>
+  </SQLFilesColumn>
+
+  <!-- The name of the column in the partner GIS layer indicating which Map files should be
+  		created for each partner -->
+  <MapFilesColumn>
+  	<value>MapFiles</value>
+  </MapFilesColumn>
 
   <!-- The name of the column in the partner GIS layer indicating which survey tags, if any
        should be included in the export -->
@@ -182,7 +188,7 @@ used by the MapBasic tool to select and export data for partners.
 	the extract tables -->
   <SQLTables>
 	<GiGL_AllSpp>
-		<TableName>
+		<TableName> <!-- This is the output table name --> 
 			<Value>GiGL_Species_All</Value>
 		</TableName>
 		<Columns>
@@ -218,7 +224,7 @@ used by the MapBasic tool to select and export data for partners.
 	</GiGL_AllSpp>
 	<TVERC_AllSpp_S>
 		<TableName>
-			<Value>TVERC_Spp_Full</Value>
+			<Value>AllSpeciesSpatial</Value>
 		</TableName>
 		<Columns>
 			<Value>TaxonName, CommonName, TaxonClass, TaxonGroup, TaxonOrder, SP_GEOMETRY</Value>
@@ -232,7 +238,7 @@ used by the MapBasic tool to select and export data for partners.
 	</TVERC_AllSpp_S>
 	<TVERC_AllSpp_NS>
 		<TableName>
-			<Value>TVERC_Spp_Full</Value>
+			<Value>WhitethroatNotSpatial</Value>
 		</TableName>
 		<Columns>
 			<Value>TaxonName, CommonName, TaxonClass, TaxonGroup, TaxonOrder, SurveyName</Value>

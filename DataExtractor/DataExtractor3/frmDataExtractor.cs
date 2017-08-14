@@ -65,7 +65,7 @@ namespace DataExtractor3
         List<string> liOpenLayerEntries = new List<string>();
 
         List<string> liSQLLayers = new List<string>();
-        List<string> liSQLTableNames = new List<string>();
+        List<string> liSQLOutputNames = new List<string>();
         List<string> liSQLColumns = new List<string>();
         List<string> liSQLClauses = new List<string>();
         List<string> liSQLLayerFiles = new List<string>();
@@ -151,8 +151,8 @@ namespace DataExtractor3
             }
 
             // From the XML, get all the SQL tables and their items.
-            liSQLLayers = myConfig.GetSQLTables();
-            liSQLTableNames = myConfig.GetSQLTableNames();
+            liSQLLayers = myConfig.GetSQLTables(); //Node names as defined in the SQLFileList.
+            liSQLOutputNames = myConfig.GetSQLTableNames(); // Output names for each node.
             liSQLColumns = myConfig.GetSQLColumns();
             liSQLClauses = myConfig.GetSQLClauses();
             liSQLLayerFiles = myConfig.GetSQLSymbology();
@@ -326,7 +326,10 @@ namespace DataExtractor3
                 liChosenPartners.Add(aPartner);
             }
 
-            string strChosenSQLLayer = lstTables.SelectedItem.ToString();
+
+            string strChosenSQLLayer = "";
+            if (lstTables.SelectedItem != null)
+                strChosenSQLLayer = lstTables.SelectedItem.ToString();
 
             // Get the selected GIS layers
             List<string> liChosenGISLayers = new List<string>();
@@ -378,32 +381,34 @@ namespace DataExtractor3
             string strNotesColumn = myConfig.GetNotesColumn();
             string strFormatColumn = myConfig.GetFormatColumn();
             string strExportColumn = myConfig.GetExportColumn();
-            string strFilesColumn = myConfig.GetFilesColumn();
+            string strSQLFilesColumn = myConfig.GetSQLFilesColumn();
+            string strMapFilesColumn = myConfig.GetMapFilesColumn();
             string strTagsColumn = myConfig.GetTagsColumn();
 
             string strConfidentialClause = myConfig.GetConfidentialClause();
 
             // Finally get all the raw data for the SQL layers and maps into memory.
+            // Note this has changed - we are processing *all* the SQL layers.
 
-            List<string> liChosenSQLLayers = new List<string>();
-            List<string> liChosenSQLTableNames = new List<string>();
-            List<string> liChosenSQLColumns = new List<string>();
-            List<string> liChosenSQLClauses = new List<string>();
-            List<string> liChosenSQLSymbology = new List<string>();
+            List<string> liChosenSQLLayers = liSQLLayers; //new List<string>(); 
+            List<string> liChosenSQLOutputNames = liSQLOutputNames; //new List<string>();
+            List<string> liChosenSQLColumns = liSQLColumns; //new List<string>();
+            List<string> liChosenSQLClauses = liSQLClauses; //new List<string>();
+            List<string> liChosenSQLSymbology = liSQLLayerFiles; //new List<string>();
 
-            int b = 0;
-            foreach (string strTable in liSQLTableNames)
-            {
-                if (strTable == strChosenSQLLayer)
-                {
-                    liChosenSQLLayers.Add(liSQLLayers[b]);
-                    liChosenSQLTableNames.Add(strTable);
-                    liChosenSQLColumns.Add(liSQLColumns[b]);
-                    liChosenSQLClauses.Add(liSQLClauses[b]);
-                    liChosenSQLSymbology.Add(liSQLLayerFiles[b]);
-                }
-                b++;
-            }
+            //int b = 0;
+            //foreach (string strTable in liSQLOutputNames)
+            //{
+            //    if (strTable == strChosenSQLLayer)
+            //    {
+            //        liChosenSQLLayers.Add(liSQLLayers[b]);
+            //        liChosenSQLOutputNames.Add(strTable);
+            //        liChosenSQLColumns.Add(liSQLColumns[b]);
+            //        liChosenSQLClauses.Add(liSQLClauses[b]);
+            //        liChosenSQLSymbology.Add(liSQLLayerFiles[b]);
+            //    }
+            //    b++;
+            //}
 
             // Start the log file.
             string strUserID = Environment.UserName;
@@ -469,8 +474,10 @@ namespace DataExtractor3
                 string strNotes = null;
                 string strFormat = null;
                 string strExport = null;
-                List<string> liFilesRaw = null;
-                List<string> liFiles = new List<string>();
+                List<string> liSQLFilesRaw = null;
+                List<string> liMapFilesRaw = null;
+                List<string> liSQLFiles = new List<string>();
+                List<string> liMapFiles = new List<string>();
                 string strTags = null;
 
                 myFileFuncs.WriteLine(strLogFile, "Processing partner " + strPartner + ".");
@@ -508,15 +515,21 @@ namespace DataExtractor3
                         strFormat = pRow.get_Value(a).ToString();
                         a = pRow.Fields.FindField(strExportColumn);
                         strExport = pRow.get_Value(a).ToString();
-                        a = pRow.Fields.FindField(strFilesColumn);
-                        liFilesRaw = pRow.get_Value(a).ToString().Split(',').ToList(); // List of the different file names.
+                        a = pRow.Fields.FindField(strSQLFilesColumn);
+                        liSQLFilesRaw = pRow.get_Value(a).ToString().Split(',').ToList(); // List of the different SQL file names.
+                        a = pRow.Fields.FindField(strMapFilesColumn);
+                        liMapFilesRaw = pRow.get_Value(a).ToString().Split(',').ToList(); // List of the different Map file names.
                         a = pRow.Fields.FindField(strTagsColumn);
                         strTags = pRow.get_Value(a).ToString();
 
                         // sort out any spaces in the files list.
-                        foreach (string aFile in liFilesRaw)
+                        foreach (string aFile in liSQLFilesRaw)
                         {
-                            liFiles.Add(aFile.Trim());
+                            liSQLFiles.Add(aFile.Trim());
+                        }
+                        foreach (string aFile in liMapFilesRaw)
+                        {
+                            liMapFiles.Add(aFile.Trim());
                         }
                     }
                     i++;
@@ -544,103 +557,147 @@ namespace DataExtractor3
                 }
                 dbConn.Close();
 
-                myFileFuncs.WriteLine(strLogFile, "Processing SQL layers for partner " + strPartner + ".");
-                b = 0;
+                // Process the SQL layers.
                 string strCurrentSpatialTable = ""; // Tracks the name of the current spatial table, so we don't have to redo if we are using the same one.
-                int intTotLayers = liChosenSQLLayers.Count();
-                int intThisLayer = 1;
-                foreach (string strSQLLayer in liChosenSQLLayers) // Output files, not input tables.
+                // Note under current setup the CurrentSpatialTable never changes.
+                if (strChosenSQLLayer != "")
                 {
-                    lblPartner.Text = strPartner + ": Processing SQL table " + strSQLLayer + ".";
-                    lblPartner.Refresh();
+                    myFileFuncs.WriteLine(strLogFile, "Processing SQL layers for partner " + strPartner + ".");
+                    int b = 0;
+                    int intTotLayers = liChosenSQLLayers.Count(); // This is *all* the SQL layers in the XML.
+                    //int intThisLayer = 1;
 
-                    // Does the partner want this layer?
-                    if (liFiles.Contains(strSQLLayer))
+                     
+                    foreach (string strSQLLayer in liChosenSQLLayers) // Output files, not input tables.
                     {
-                        // They do, process. 
-                        // Is there a geometry field in the data requested?
-                        myFileFuncs.WriteLine(strLogFile, "Processing SQL layer " + strSQLLayer);
-
-                        bool blSpatial = false;
-                        string strColumns = liChosenSQLColumns[b];
-                        string strClause = liChosenSQLClauses[b];
-                        string strTable = liChosenSQLTableNames[b];
-                        string strLayerFile = liChosenSQLSymbology[b];
-                        string strSpatialColumn = "";
-                        string strSplit = "0"; // Do we need to split for polys / points?
-                        foreach (string strField in strGeometryFields)
+                        // Does the partner want this layer?
+                        if (liSQLFiles.Contains(strSQLLayer))
                         {
-                            if (strColumns.ToLower().Contains(strField.ToLower()))
-                            {
-                                blSpatial = true;
-                                strSplit = "1"; // To be passed to stored procedure.
-                                strSpatialColumn = strField; // To be passed to stored procedure
-                            }
-                        }
+                            // They do, process. 
+                            lblPartner.Text = strPartner + ": Processing SQL table " + strSQLLayer + ".";
+                            lblPartner.Refresh();
 
-                        // if '*' is used then check for geometry field in the table.
-                        
-                        if (strColumns == "*")
-                        {
-                            string strCheckTable = myConfig.GetDatabaseSchema() + "." + strTable;
-                            dbConn.Open();
+                            bool blSpatial = false;
+                            string strColumns = liChosenSQLColumns[b];
+                            string strClause = liChosenSQLClauses[b];
+                            string strOutputTable = liChosenSQLOutputNames[b];
+                            string strLayerFile = liChosenSQLSymbology[b];
+                            myFileFuncs.WriteLine(strLogFile, "Processing SQL layer " + strSQLLayer + " for output " + strOutputTable);
+
+                            string strSpatialColumn = "";
+                            string strSplit = "0"; // Do we need to split for polys / points?
+                            // Is there a geometry field in the data requested?
                             foreach (string strField in strGeometryFields)
                             {
-                                if (mySQLServerFuncs.FieldExists(ref dbConn, strCheckTable, strField))
+                                if (strColumns.ToLower().Contains(strField.ToLower()))
                                 {
                                     blSpatial = true;
-                                    strSpatialColumn = strField;
-                                    strSplit = "1";
+                                    strSplit = "1"; // To be passed to stored procedure.
+                                    strSpatialColumn = strField; // To be passed to stored procedure
                                 }
                             }
-                            dbConn.Close();
-                        }
 
-                        // Check if the input has a spatial aspect to it.
-                        //bool blInputIsSpatial = false;
-                        //dbConn.Open();
-                        //foreach (string strField in strGeometryFields)
-                        //{
-                        //    string strCheckTable = myConfig.GetDatabaseSchema() + "." + strTable;
-                        //    if (mySQLServerFuncs.FieldExists(ref dbConn, strCheckTable, strField))
-                        //    {
-                        //        blInputIsSpatial = true;
-                        //    }
+                            // if '*' is used then check for geometry field in the table.
 
-                        //}
-                        //dbConn.Close();
-
-                        // Firstly do the spatial/ tags selection .
-                        int intTimeoutSeconds = myConfig.GetTimeoutSeconds();
-                        string strIntermediateTable = strTable + "_" + strUserID; // The output table from the HLSppSelection stored procedure.
-                        if (true) // Fixed for the moment because it's now calling a different spatial procedure.
-                        {
-                            string strStoredSpatialAndTagsProcedure = "HLSelectSppRecords2"; 
-                            
-                            if (strTable != strCurrentSpatialTable) // Only process if the source table is different
+                            if (strColumns == "*")
                             {
-                                // Delete the original subset if relevant.
-                                if (strCurrentSpatialTable != "")
+                                string strCheckTable = myConfig.GetDatabaseSchema() + "." + strChosenSQLLayer;
+                                dbConn.Open();
+                                foreach (string strField in strGeometryFields)
                                 {
-                                    SqlCommand myDeleteCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, "HLClearSpatialSubset", CommandType.StoredProcedure);
-                                    mySQLServerFuncs.AddSQLParameter(ref myDeleteCommand, "Schema", myConfig.GetDatabaseSchema());
-                                    mySQLServerFuncs.AddSQLParameter(ref myDeleteCommand, "SpeciesTable", strCurrentSpatialTable);
-                                    mySQLServerFuncs.AddSQLParameter(ref myDeleteCommand, "UserId", strUserID);
+                                    if (mySQLServerFuncs.FieldExists(ref dbConn, strCheckTable, strField))
+                                    {
+                                        blSpatial = true;
+                                        strSpatialColumn = strField;
+                                        strSplit = "1";
+                                    }
+                                }
+                                dbConn.Close();
+                            }
+
+
+                            // Firstly do the spatial/ tags selection .
+                            int intTimeoutSeconds = myConfig.GetTimeoutSeconds();
+                            string strIntermediateTable = strChosenSQLLayer + "_" + strUserID; // The output table from the HLSppSelection stored procedure.
+                            if (true) // Fixed for the moment because it's now calling a different spatial procedure.
+                            {
+                                string strStoredSpatialAndTagsProcedure = "HLSelectSppRecords";
+
+                                if (strOutputTable != strCurrentSpatialTable) // Only process if the source table is different
+                                {
+                                    // Delete the original subset if relevant.
+                                    if (strCurrentSpatialTable != "")
+                                    {
+                                        SqlCommand myDeleteCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, "HLClearSpatialSubset", CommandType.StoredProcedure);
+                                        mySQLServerFuncs.AddSQLParameter(ref myDeleteCommand, "Schema", myConfig.GetDatabaseSchema());
+                                        mySQLServerFuncs.AddSQLParameter(ref myDeleteCommand, "SpeciesTable", strCurrentSpatialTable);
+                                        mySQLServerFuncs.AddSQLParameter(ref myDeleteCommand, "UserId", strUserID);
+                                        try
+                                        {
+                                            myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
+                                            dbConn.Open();
+                                            myFileFuncs.WriteLine(strLogFile, "Executing stored procedure to delete spatial subselection.");
+                                            string strRowsAffect = myDeleteCommand.ExecuteNonQuery().ToString();
+                                            // Close the connection again.
+                                            myDeleteCommand = null;
+                                            dbConn.Close();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            MessageBox.Show("Could not execute stored procedure 'HLClearSpatialSubset'. System returned the following message: " +
+                                                ex.Message);
+                                            myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure HLClearSpatialSubset. System returned the following message: " +
+                                                ex.Message);
+                                            this.Cursor = Cursors.Default;
+                                            dbConn.Close();
+                                            myArcMapFuncs.ToggleDrawing();
+                                            myArcMapFuncs.ToggleTOC();
+                                            lblPartner.Text = "";
+                                            this.BringToFront();
+                                            this.Cursor = Cursors.Default;
+                                            return;
+                                        }
+                                    }
+
+                                    // make the spatial / tags selection.
+                                    SqlCommand mySpatialCommand = null;
+                                    if (intTimeoutSeconds == 0)
+                                    {
+                                        mySpatialCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredSpatialAndTagsProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+                                    }
+                                    else
+                                    {
+                                        mySpatialCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredSpatialAndTagsProcedure, CommandType.StoredProcedure, intTimeoutSeconds);
+                                    }
+
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Schema", myConfig.GetDatabaseSchema());
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "PartnerTable", strPartnerTable);
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "PartnerColumn", strShortColumn); // Used for selection
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Partner", strShortName); // Used for selection
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "TagsColumn", strTagsColumn);
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "PartnerSpatialColumn", strPartnerSpatialColumn);
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "SelectType", strSelectionDigit);
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "SpeciesTable", strChosenSQLLayer);
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "UserId", strUserID);
+                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Split", strSplit);
+
+                                    // Execute stored procedure.
                                     try
                                     {
                                         myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
                                         dbConn.Open();
-                                        myFileFuncs.WriteLine(strLogFile, "Executing stored procedure to delete spatial subselection.");
-                                        string strRowsAffect = myDeleteCommand.ExecuteNonQuery().ToString();
+                                        myFileFuncs.WriteLine(strLogFile, "Executing stored procedure to make spatial / tags selection.");
+                                        string strRowsAffect = mySpatialCommand.ExecuteNonQuery().ToString();
                                         // Close the connection again.
-                                        myDeleteCommand = null;
+                                        mySpatialCommand = null;
                                         dbConn.Close();
+                                        strCurrentSpatialTable = strChosenSQLLayer; // The source table that current spatial table has been derived from.
                                     }
                                     catch (Exception ex)
                                     {
-                                        MessageBox.Show("Could not execute stored procedure 'HLClearSpatialSubset'. System returned the following message: " +
+                                        MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
                                             ex.Message);
-                                        myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure HLClearSpatialSubset. System returned the following message: " +
+                                        myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
                                             ex.Message);
                                         this.Cursor = Cursors.Default;
                                         dbConn.Close();
@@ -652,239 +709,144 @@ namespace DataExtractor3
                                         return;
                                     }
                                 }
+                            }
 
+                            // Now do the attribute query. This splits the output into points and polygons as relevant.
+                            // Set the temporary table names and the stored procedure names.
+                            string strStoredProcedure = "HLSelectSppSubset"; // Default for all data
+                            string strPolyFC = strIntermediateTable + "_poly"; // Change these.
+                            string strPointFC = strIntermediateTable + "_point";
+                            string strTempTable = strIntermediateTable + "_flat";
 
-                                SqlCommand mySpatialCommand = null;
-                                if (intTimeoutSeconds == 0)
+                            SqlCommand myCommand = null;
+
+                            if (intTimeoutSeconds == 0)
+                            {
+                                myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+                            }
+                            else
+                            {
+                                myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure, intTimeoutSeconds);
+                            }
+
+                            // Add the confidential clause if required.
+                            if (strClause == "")
+                            {
+                                if (!blConfidential && strConfidentialClause != "") // Confidential records are excluded
                                 {
-                                    mySpatialCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredSpatialAndTagsProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+                                    strClause = strConfidentialClause; // Note WHERE is already included in the SP and needs not be repeated.
+                                }
+                            }
+                            else
+                            {
+                                if (!blConfidential && strConfidentialClause != "") // There is a where clause and confidential records are excluded
+                                {
+                                    strClause = strClause + " AND (" + strConfidentialClause + ")";
+                                }
+                            }
+
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "Schema", myConfig.GetDatabaseSchema());
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", strIntermediateTable);
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "SpatialColumn", strSpatialColumn);
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "ColumnNames", strColumns);
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "WhereClause", strClause);
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "GroupByClause", "");
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "OrderByClause", "");
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "UserID", strUserID);
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
+
+                            myFileFuncs.WriteLine(strLogFile, "Species table is " + strIntermediateTable);
+                            myFileFuncs.WriteLine(strLogFile, "Column names are " + strColumns);
+                            myFileFuncs.WriteLine(strLogFile, "Spatial column is " + strSpatialColumn);
+                            myFileFuncs.WriteLine(strLogFile, "User ID is " + strUserID);
+                            myFileFuncs.WriteLine(strLogFile, "Output base name is " + strIntermediateTable);
+                            if (strClause.Length > 0)
+                                myFileFuncs.WriteLine(strLogFile, "Where clause is " + strClause.Replace("\r\n", " "));
+                            else
+                                myFileFuncs.WriteLine(strLogFile, "No where clause was used");
+                            if (strSplit == "1")
+                                myFileFuncs.WriteLine(strLogFile, "Data is spatial and will be split into a point and a polygon layer");
+                            else
+                                myFileFuncs.WriteLine(strLogFile, "Data is not spatial and will not be split");
+
+
+                            // Open SQL connection to database and
+                            // Run the stored procedure.
+                            bool blSuccess = true;
+                            int intCount = 0;
+                            int intPolyCount = 0;
+                            int intPointCount = 0;
+                            try
+                            {
+                                myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
+                                dbConn.Open();
+                                myFileFuncs.WriteLine(strLogFile, "Executing stored procedure " + strStoredProcedure);
+                                string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
+                                if (blSpatial)
+                                {
+                                    blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strPointFC);
+                                    if (!blSuccess)
+                                        blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strPolyFC);
+                                }
+                                else
+                                    blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strTempTable);
+
+                                if (blSuccess && blSpatial)
+                                {
+                                    intPolyCount = mySQLServerFuncs.CountRows(ref dbConn, strPolyFC);
+                                    intPointCount = mySQLServerFuncs.CountRows(ref dbConn, strPointFC);
+
+
+                                    myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intPointCount.ToString() + " point and " + intPolyCount.ToString() +
+                                        " polygon records");
+                                }
+                                else if (blSuccess)
+                                {
+                                    intCount = mySQLServerFuncs.CountRows(ref dbConn, strTempTable);
+                                    myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intCount.ToString() + " records");
                                 }
                                 else
                                 {
-                                    mySpatialCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredSpatialAndTagsProcedure, CommandType.StoredProcedure, intTimeoutSeconds);
+                                    myFileFuncs.WriteLine(strLogFile, "Procedure returned no records");
                                 }
 
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Schema", myConfig.GetDatabaseSchema());
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "PartnerTable", strPartnerTable);
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "PartnerColumn", strShortColumn); // Used for selection
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Partner", strShortName); // Used for selection
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "TagsColumn", strTagsColumn);
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "PartnerSpatialColumn", strPartnerSpatialColumn);
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "SelectType", strSelectionDigit);
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "SpeciesTable", strTable);
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "UserId", strUserID);
-                                mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Split", strSplit);
 
-                                // Execute stored procedure.
-                                try
-                                {
-                                    myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
-                                    dbConn.Open();
-                                    myFileFuncs.WriteLine(strLogFile, "Executing stored procedure to make spatial / tags selection.");
-                                    string strRowsAffect = mySpatialCommand.ExecuteNonQuery().ToString();
-                                    // Close the connection again.
-                                    mySpatialCommand = null;
-                                    dbConn.Close();
-                                    strCurrentSpatialTable = strTable; // The source table that current spatial table has been derived from.
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
-                                        ex.Message);
-                                    myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
-                                        ex.Message);
-                                    this.Cursor = Cursors.Default;
-                                    dbConn.Close();
-                                    myArcMapFuncs.ToggleDrawing();
-                                    myArcMapFuncs.ToggleTOC();
-                                    lblPartner.Text = "";
-                                    this.BringToFront();
-                                    this.Cursor = Cursors.Default;
-                                    return;
-                                }
-                            }
-                        }
-                        
-                        // Set the temporary table names and the stored procedure names.
-                        string strStoredProcedure = "HLSelectSppSubset"; // Default for all data
-                        string strPolyFC = strIntermediateTable + "_poly"; // Change these.
-                        string strPointFC = strIntermediateTable + "_point";
-                        string strTempTable = strIntermediateTable + "_flat";
-                        
-                        SqlCommand myCommand = null;
-                     
-                        if (intTimeoutSeconds == 0)
-                        {
-                            myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
-                        }
-                        else
-                        {
-                            myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure, intTimeoutSeconds); 
-                        }
-
-                        // Add the confidential clause if required.
-                        if (strClause == "")
-                        {
-                            if (!blConfidential && strConfidentialClause != "") // Confidential records are excluded
-                            {
-                                strClause = strConfidentialClause; // Note WHERE is already included in the SP and needs not be repeated.
-                            }
-                        }
-                        else
-                        {
-                            if (!blConfidential && strConfidentialClause != "") // There is a where clause and confidential records are excluded
-                            {
-                                strClause = strClause + " AND (" + strConfidentialClause + ")";
-                            }
-                        }
-
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "Schema", myConfig.GetDatabaseSchema());
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", strIntermediateTable);
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "SpatialColumn", strSpatialColumn);
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "ColumnNames", strColumns);
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "WhereClause", strClause);
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "GroupByClause", "");
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "OrderByClause", "");
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "UserID", strUserID);
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
-
-                        myFileFuncs.WriteLine(strLogFile, "Species table is " + strIntermediateTable);
-                        myFileFuncs.WriteLine(strLogFile, "Column names are " + strColumns);
-                        myFileFuncs.WriteLine(strLogFile, "Spatial column is " + strSpatialColumn);
-                        myFileFuncs.WriteLine(strLogFile, "User ID is " + strUserID);
-                        myFileFuncs.WriteLine(strLogFile, "Output base name is " + strIntermediateTable);
-                        if (strClause.Length > 0)
-                            myFileFuncs.WriteLine(strLogFile, "Where clause is " + strClause.Replace("\r\n", " "));
-                        else
-                            myFileFuncs.WriteLine(strLogFile, "No where clause was used");
-                        if (strSplit == "1")
-                            myFileFuncs.WriteLine(strLogFile, "Data is spatial and will be split into a point and a polygon layer");
-                        else
-                            myFileFuncs.WriteLine(strLogFile, "Data is not spatial and will not be split");
-
-
-                        // Open SQL connection to database and
-                        // Run the stored procedure.
-                        bool blSuccess = true;
-                        int intCount = 0;
-                        int intPolyCount = 0;
-                        int intPointCount = 0;
-                        try
-                        {
-                            myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
-                            dbConn.Open();
-                            myFileFuncs.WriteLine(strLogFile, "Executing stored procedure " + strStoredProcedure);
-                            string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
-                            if (blSpatial)
-                            {
-                                blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strPointFC); 
-                                if (!blSuccess)
-                                    blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strPolyFC);
-                            }
-                            else
-                                blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strTempTable);
-
-                            if (blSuccess && blSpatial)
-                            {
-                                intPolyCount = mySQLServerFuncs.CountRows(ref dbConn, strPolyFC);
-                                intPointCount = mySQLServerFuncs.CountRows(ref dbConn, strPointFC);
-
-                                
-                                myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intPointCount.ToString() + " point and " + intPolyCount.ToString() +
-                                    " polygon records");
-                            }
-                            else if (blSuccess)
-                            {
-                                intCount = mySQLServerFuncs.CountRows(ref dbConn, strTempTable);
-                                myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intCount.ToString() + " records");
-                            }
-                            else
-                            {
-                                myFileFuncs.WriteLine(strLogFile, "Procedure returned no records");
-                            }
-
-
-                            myFileFuncs.WriteLine(strLogFile, "Closing SQL Connection");
-                            dbConn.Close();
-                            myCommand = null;
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
-                                ex.Message);
-                            myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
-                                ex.Message);
-                            this.Cursor = Cursors.Default;
-                            dbConn.Close();
-                            myArcMapFuncs.ToggleDrawing();
-                            myArcMapFuncs.ToggleTOC();
-                            this.BringToFront();
-                            this.Cursor = Cursors.Default;
-                            return;
-                        }
-
-                        lblPartner.Text = strPartner + ": Writing output for " + strSQLLayer + " to GIS format.";
-                        lblPartner.Refresh();
-                        this.BringToFront();
-
-                        // Set up the final output.
-                        string strOutFolder = strDefaultPath + "\\" + strShortName;
-
-                        if (!myFileFuncs.DirExists(strOutFolder))
-                        {
-                            myFileFuncs.WriteLine(strLogFile, "Output folder " + strOutFolder + " doesn't exist. Creating...");
-                            try
-                            {
-                                Directory.CreateDirectory(strOutFolder);
+                                myFileFuncs.WriteLine(strLogFile, "Closing SQL Connection");
+                                dbConn.Close();
+                                myCommand = null;
                             }
                             catch (Exception ex)
                             {
-                                MessageBox.Show("Cannot create directory " + strOutFolder + ". System error: " + ex.Message);
+                                MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                                    ex.Message);
+                                myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
+                                    ex.Message);
+                                this.Cursor = Cursors.Default;
+                                dbConn.Close();
                                 myArcMapFuncs.ToggleDrawing();
                                 myArcMapFuncs.ToggleTOC();
-                                lblPartner.Text = "";
                                 this.BringToFront();
                                 this.Cursor = Cursors.Default;
                                 return;
                             }
-                            myFileFuncs.WriteLine(strLogFile, "Output folder created.");
-                        }
 
-                        bool blIsGDB = false;
-                        if (strFormat == "GDB")
-                        {
-                            blIsGDB = true;
-                            strOutFolder = strOutFolder + "\\DataExtracts.gdb";
+                            lblPartner.Text = strPartner + ": Writing output for " + strSQLLayer + " to GIS format.";
+                            lblPartner.Refresh();
+                            this.BringToFront();
+
+                            // Set up the final output.
+                            string strOutFolder = strDefaultPath + "\\" + strShortName;
+
                             if (!myFileFuncs.DirExists(strOutFolder))
                             {
-                                myFileFuncs.WriteLine(strLogFile, "Output geodatabase " + strOutFolder + " doesn't exist. Creating...");
-                                myArcMapFuncs.CreateGeodatabase(strOutFolder);
-                            }
-                            myFileFuncs.WriteLine(strLogFile, "Output geodatabase created.");
-                        }
-
-                        string strOutLayer = strOutFolder + "\\" + strSQLLayer; //NOTE not poly or point - for non-spatial output.
-                        string strOutLayerPoint = strOutLayer + "_point";
-                        string strOutLayerPoly = strOutLayer + "_poly";
-
-
-                        // Now export to shape or table as appropriate.
-                        bool blResult = false;
-                        if (blSpatial && blSuccess)
-                        {
-                            if (!blIsGDB) strOutLayerPoint = strOutLayerPoint + ".shp";
-                            if (!blIsGDB) strOutLayerPoly = strOutLayerPoly + ".shp";
-                            if (intPolyCount > 0)
-                            {
-                                myFileFuncs.WriteLine(strLogFile, "Exporting polygon selection to GIS file: " + strOutLayerPoly + ".");
-                                strPolyFC = strSDEName + "\\" + strPolyFC;
-                                blResult = myArcMapFuncs.CopyFeatures(strPolyFC, strOutLayerPoly); // Copies both to GDB and shapefile.
-                                myArcMapFuncs.RemoveLayer(strSQLLayer + "_poly"); // Temporary layer is removed.
-                                if (!blResult)
+                                myFileFuncs.WriteLine(strLogFile, "Output folder " + strOutFolder + " doesn't exist. Creating...");
+                                try
                                 {
-                                    MessageBox.Show("Error exporting polygon output from SQL table");
-                                    myFileFuncs.WriteLine(strLogFile, "Error exporting " + strPolyFC + " to " + strOutLayerPoly);
-                                    this.Cursor = Cursors.Default;
+                                    Directory.CreateDirectory(strOutFolder);
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show("Cannot create directory " + strOutFolder + ". System error: " + ex.Message);
                                     myArcMapFuncs.ToggleDrawing();
                                     myArcMapFuncs.ToggleTOC();
                                     lblPartner.Text = "";
@@ -892,66 +854,149 @@ namespace DataExtractor3
                                     this.Cursor = Cursors.Default;
                                     return;
                                 }
+                                myFileFuncs.WriteLine(strLogFile, "Output folder created.");
                             }
-                            if (intPointCount > 0)
+
+                            bool blIsGDB = false;
+                            if (strFormat == "GDB")
                             {
-                                myFileFuncs.WriteLine(strLogFile, "Exporting point selection to GIS file: " + strOutLayerPoint + ".");
-                                strPointFC = strSDEName + "\\" + strPointFC;
-                                blResult = myArcMapFuncs.CopyFeatures(strPointFC, strOutLayerPoint); // Copies both to GDB and shapefile.
-                                myArcMapFuncs.RemoveLayer(strSQLLayer + "_point"); // Temporary layer is removed.
-                                if (!blResult)
+                                blIsGDB = true;
+                                strOutFolder = strOutFolder + "\\DataExtracts.gdb";
+                                if (!myFileFuncs.DirExists(strOutFolder))
                                 {
-                                    MessageBox.Show("Error exporting point output from SQL table");
-                                    myFileFuncs.WriteLine(strLogFile, "Error exporting " + strPointFC + " to " + strOutLayerPoint);
-                                    this.Cursor = Cursors.Default;
-                                    myArcMapFuncs.ToggleDrawing();
-                                    myArcMapFuncs.ToggleTOC();
-                                    lblPartner.Text = "";
-                                    this.BringToFront();
-                                    this.Cursor = Cursors.Default;
-                                    return;
+                                    myFileFuncs.WriteLine(strLogFile, "Output geodatabase " + strOutFolder + " doesn't exist. Creating...");
+                                    myArcMapFuncs.CreateGeodatabase(strOutFolder);
                                 }
+                                myFileFuncs.WriteLine(strLogFile, "Output geodatabase created.");
                             }
 
-                        }
-                        else if (blSuccess)
-                        {
-                            // There is only one table to export.
-                            if (!blIsGDB) strOutLayer = strOutLayer + ".dbf";
-                            string strInTable = strSDEName + "\\" + strTempTable;
-                            myFileFuncs.WriteLine(strLogFile, "Exporting selection to flat table: " + strOutLayer + ".");
-                            blResult = myArcMapFuncs.CopyTable(strInTable, strOutLayer);
-                            if (!blResult)
+                            string strOutLayer = strOutFolder + "\\" + strOutputTable; //strSQLLayer; //NOTE not poly or point - for non-spatial output.
+                            string strOutLayerPoint = strOutLayer + "_point";
+                            string strOutLayerPoly = strOutLayer + "_poly";
+
+
+                            // Now export to shape or table as appropriate.
+                            bool blResult = false;
+                            if (blSpatial && blSuccess)
                             {
-                                MessageBox.Show("Error exporting output from SQL table");
-                                myFileFuncs.WriteLine(strLogFile, "Error exporting " + strTempTable + " to " + strOutLayer);
-                                this.Cursor = Cursors.Default;
-                                myArcMapFuncs.ToggleDrawing();
-                                myArcMapFuncs.ToggleTOC();
-                                lblPartner.Text = "";
-                                this.BringToFront();
-                                this.Cursor = Cursors.Default;
-                                return;
-                            }
-                            myArcMapFuncs.RemoveStandaloneTable(strSQLLayer);
-                        }
-
-                        lblPartner.Text = strPartner + ": Writing output for " + strSQLLayer + " to text file.";
-                        lblPartner.Refresh();
-
-                        // Now export to CSV if required.
-                        strExport = strExport.ToLower().Trim();
-                        if (strExport == "csv" && blSuccess)
-                        {
-                            if (blSpatial)
-                            {
-
-                                bool blAppend = false;
-                                string strOutputFile = strDefaultPath + "\\" + strShortName + "\\" + strSQLLayer + ".csv";
+                                if (!blIsGDB) strOutLayerPoint = strOutLayerPoint + ".shp";
+                                if (!blIsGDB) strOutLayerPoly = strOutLayerPoly + ".shp";
+                                if (intPolyCount > 0)
+                                {
+                                    myFileFuncs.WriteLine(strLogFile, "Exporting polygon selection to GIS file: " + strOutLayerPoly + ".");
+                                    strPolyFC = strSDEName + "\\" + strPolyFC;
+                                    blResult = myArcMapFuncs.CopyFeatures(strPolyFC, strOutLayerPoly); // Copies both to GDB and shapefile.
+                                    myArcMapFuncs.RemoveLayer(strOutputTable + "_poly"); // Temporary layer is removed.
+                                    if (!blResult)
+                                    {
+                                        MessageBox.Show("Error exporting polygon output from SQL table");
+                                        myFileFuncs.WriteLine(strLogFile, "Error exporting " + strPolyFC + " to " + strOutLayerPoly);
+                                        this.Cursor = Cursors.Default;
+                                        myArcMapFuncs.ToggleDrawing();
+                                        myArcMapFuncs.ToggleTOC();
+                                        lblPartner.Text = "";
+                                        this.BringToFront();
+                                        this.Cursor = Cursors.Default;
+                                        return;
+                                    }
+                                }
                                 if (intPointCount > 0)
                                 {
-                                    myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file " + strOutputFile);
-                                    blResult = myArcMapFuncs.CopyToCSV(strOutLayerPoint, strOutputFile,true, blAppend, true);
+                                    myFileFuncs.WriteLine(strLogFile, "Exporting point selection to GIS file: " + strOutLayerPoint + ".");
+                                    strPointFC = strSDEName + "\\" + strPointFC;
+                                    blResult = myArcMapFuncs.CopyFeatures(strPointFC, strOutLayerPoint); // Copies both to GDB and shapefile.
+                                    myArcMapFuncs.RemoveLayer(strOutputTable + "_point"); // Temporary layer is removed.
+                                    if (!blResult)
+                                    {
+                                        MessageBox.Show("Error exporting point output from SQL table");
+                                        myFileFuncs.WriteLine(strLogFile, "Error exporting " + strPointFC + " to " + strOutLayerPoint);
+                                        this.Cursor = Cursors.Default;
+                                        myArcMapFuncs.ToggleDrawing();
+                                        myArcMapFuncs.ToggleTOC();
+                                        lblPartner.Text = "";
+                                        this.BringToFront();
+                                        this.Cursor = Cursors.Default;
+                                        return;
+                                    }
+                                }
+
+                            }
+                            else if (blSuccess)
+                            {
+                                // There is only one table to export.
+                                if (!blIsGDB) strOutLayer = strOutLayer + ".dbf";
+                                string strInTable = strSDEName + "\\" + strTempTable;
+                                myFileFuncs.WriteLine(strLogFile, "Exporting selection to flat table: " + strOutLayer + ".");
+                                blResult = myArcMapFuncs.CopyTable(strInTable, strOutLayer);
+                                if (!blResult)
+                                {
+                                    MessageBox.Show("Error exporting output from SQL table");
+                                    myFileFuncs.WriteLine(strLogFile, "Error exporting " + strTempTable + " to " + strOutLayer);
+                                    this.Cursor = Cursors.Default;
+                                    myArcMapFuncs.ToggleDrawing();
+                                    myArcMapFuncs.ToggleTOC();
+                                    lblPartner.Text = "";
+                                    this.BringToFront();
+                                    this.Cursor = Cursors.Default;
+                                    return;
+                                }
+                                myArcMapFuncs.RemoveStandaloneTable(strSQLLayer);
+                            }
+
+                            lblPartner.Text = strPartner + ": Writing output for " + strSQLLayer + " to text file.";
+                            lblPartner.Refresh();
+
+                            // Now export to CSV if required.
+                            strExport = strExport.ToLower().Trim();
+                            if (strExport == "csv" && blSuccess)
+                            {
+                                if (blSpatial)
+                                {
+
+                                    bool blAppend = false;
+                                    string strOutputFile = strDefaultPath + "\\" + strShortName + "\\" + strSQLLayer + ".csv";
+                                    if (intPointCount > 0)
+                                    {
+                                        myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file " + strOutputFile);
+                                        blResult = myArcMapFuncs.CopyToCSV(strOutLayerPoint, strOutputFile, true, blAppend, true);
+                                        if (!blResult)
+                                        {
+                                            MessageBox.Show("Error exporting output table to CSV file " + strOutputFile);
+                                            myFileFuncs.WriteLine(strLogFile, "Error exporting output table to CSV file " + strOutputFile);
+                                            this.Cursor = Cursors.Default;
+                                            myArcMapFuncs.ToggleDrawing();
+                                            myArcMapFuncs.ToggleTOC();
+                                            lblPartner.Text = "";
+                                            this.BringToFront();
+                                            this.Cursor = Cursors.Default;
+                                            return;
+                                        }
+                                        blAppend = true;
+                                    }
+                                    // Also export the second table - append if necessary.
+                                    if (intPolyCount > 0)
+                                    {
+                                        myFileFuncs.WriteLine(strLogFile, "Appending polygon results to CSV file " + strOutputFile);
+                                        blResult = myArcMapFuncs.CopyToCSV(strOutLayerPoly, strOutputFile, true, blAppend, true);
+                                        if (!blResult)
+                                        {
+                                            MessageBox.Show("Error appending output table to CSV file " + strOutputFile);
+                                            myFileFuncs.WriteLine(strLogFile, "Error appending output table to CSV file " + strOutputFile);
+                                            this.Cursor = Cursors.Default;
+                                            myArcMapFuncs.ToggleDrawing();
+                                            myArcMapFuncs.ToggleTOC();
+                                            lblPartner.Text = "";
+                                            this.BringToFront();
+                                            this.Cursor = Cursors.Default;
+                                            return;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    string strOutputFile = myConfig.GetDefaultPath() + "\\" + strShortName + "\\" + strSQLLayer + ".csv";
+                                    myFileFuncs.WriteLine(strLogFile, "Exporting CSV file to " + strOutputFile);
+                                    blResult = myArcMapFuncs.CopyToCSV(strOutLayer, strOutputFile, false, false);
                                     if (!blResult)
                                     {
                                         MessageBox.Show("Error exporting output table to CSV file " + strOutputFile);
@@ -964,17 +1009,63 @@ namespace DataExtractor3
                                         this.Cursor = Cursors.Default;
                                         return;
                                     }
-                                    blAppend = true;
                                 }
-                                // Also export the second table - append if necessary.
-                                if (intPolyCount > 0)
+
+                            }
+                            else if (strExport.ToLower() == "txt")
+                            {
+
+                                if (blSpatial)
                                 {
-                                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to CSV file " + strOutputFile);
-                                    blResult = myArcMapFuncs.CopyToCSV(strOutLayerPoly, strOutputFile, true, blAppend, true);
+
+                                    bool blAppend = false;
+                                    string strOutputFile = strDefaultPath + "\\" + strShortName + "\\" + strSQLLayer + ".txt";
+                                    if (intPointCount > 0)
+                                    {
+                                        myFileFuncs.WriteLine(strLogFile, "Copying point results to tab delimited file: " + strOutputFile);
+                                        blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutLayerPoint, strOutputFile, true, blAppend, true);
+                                        if (!blResult)
+                                        {
+                                            MessageBox.Show("Error exporting output table to txt file " + strOutputFile);
+                                            myFileFuncs.WriteLine(strLogFile, "Error exporting output table to txt file " + strOutputFile);
+                                            this.Cursor = Cursors.Default;
+                                            myArcMapFuncs.ToggleDrawing();
+                                            myArcMapFuncs.ToggleTOC();
+                                            lblPartner.Text = "";
+                                            this.BringToFront();
+                                            this.Cursor = Cursors.Default;
+                                            return;
+                                        }
+                                        blAppend = true;
+                                    }
+                                    // Also export the second table - append if necessary.
+                                    if (intPolyCount > 0)
+                                    {
+                                        myFileFuncs.WriteLine(strLogFile, "Appending polygon results to tab delimited file " + strOutputFile);
+                                        blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutLayerPoly, strOutputFile, true, blAppend, true);
+                                        if (!blResult)
+                                        {
+                                            MessageBox.Show("Error appending output table to txt file " + strOutputFile);
+                                            myFileFuncs.WriteLine(strLogFile, "Error appending output table to txt file " + strOutputFile);
+                                            this.Cursor = Cursors.Default;
+                                            myArcMapFuncs.ToggleDrawing();
+                                            myArcMapFuncs.ToggleTOC();
+                                            lblPartner.Text = "";
+                                            this.BringToFront();
+                                            this.Cursor = Cursors.Default;
+                                            return;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    string strOutputFile = myConfig.GetDefaultPath() + "\\" + strShortName + "\\" + strSQLLayer + ".txt";
+                                    myFileFuncs.WriteLine(strLogFile, "Exporting TXT file to " + strOutputFile);
+                                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutLayer, strOutputFile, false, false);
                                     if (!blResult)
                                     {
-                                        MessageBox.Show("Error appending output table to CSV file " + strOutputFile);
-                                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to CSV file " + strOutputFile);
+                                        MessageBox.Show("Error exporting output table to TXT file " + strOutputFile);
+                                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to TXT file " + strOutputFile);
                                         this.Cursor = Cursors.Default;
                                         myArcMapFuncs.ToggleDrawing();
                                         myArcMapFuncs.ToggleTOC();
@@ -984,163 +1075,87 @@ namespace DataExtractor3
                                         return;
                                     }
                                 }
-                            }
-                            else
-                            {
-                                string strOutputFile = myConfig.GetDefaultPath() + "\\" + strShortName + "\\" + strSQLLayer + ".csv";
-                                myFileFuncs.WriteLine(strLogFile, "Exporting CSV file to " + strOutputFile);
-                                blResult = myArcMapFuncs.CopyToCSV(strOutLayer, strOutputFile, false, false);
-                                if (!blResult)
-                                {
-                                    MessageBox.Show("Error exporting output table to CSV file " + strOutputFile);
-                                    myFileFuncs.WriteLine(strLogFile, "Error exporting output table to CSV file " + strOutputFile);
-                                    this.Cursor = Cursors.Default;
-                                    myArcMapFuncs.ToggleDrawing();
-                                    myArcMapFuncs.ToggleTOC();
-                                    lblPartner.Text = "";
-                                    this.BringToFront();
-                                    this.Cursor = Cursors.Default;
-                                    return;
-                                }
-                            }
-                            
-                        }
-                        else if (strExport.ToLower() == "txt")
-                        {
 
-                            if (blSpatial)
-                            {
-
-                                bool blAppend = false;
-                                string strOutputFile = strDefaultPath + "\\" + strShortName + "\\" + strSQLLayer + ".txt";
-                                if (intPointCount > 0)
-                                {
-                                    myFileFuncs.WriteLine(strLogFile, "Copying point results to tab delimited file: " + strOutputFile);
-                                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutLayerPoint, strOutputFile, true, blAppend, true);
-                                    if (!blResult)
-                                    {
-                                        MessageBox.Show("Error exporting output table to txt file " + strOutputFile);
-                                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to txt file " + strOutputFile);
-                                        this.Cursor = Cursors.Default;
-                                        myArcMapFuncs.ToggleDrawing();
-                                        myArcMapFuncs.ToggleTOC();
-                                        lblPartner.Text = "";
-                                        this.BringToFront();
-                                        this.Cursor = Cursors.Default;
-                                        return;
-                                    }
-                                    blAppend = true;
-                                }
-                                // Also export the second table - append if necessary.
-                                if (intPolyCount > 0)
-                                {
-                                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to tab delimited file " + strOutputFile);
-                                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutLayerPoly, strOutputFile, true, blAppend, true);
-                                    if (!blResult)
-                                    {
-                                        MessageBox.Show("Error appending output table to txt file " + strOutputFile);
-                                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to txt file " + strOutputFile);
-                                        this.Cursor = Cursors.Default;
-                                        myArcMapFuncs.ToggleDrawing();
-                                        myArcMapFuncs.ToggleTOC();
-                                        lblPartner.Text = "";
-                                        this.BringToFront();
-                                        this.Cursor = Cursors.Default;
-                                        return;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                string strOutputFile = myConfig.GetDefaultPath() + "\\" + strShortName + "\\" + strSQLLayer + ".txt";
-                                myFileFuncs.WriteLine(strLogFile, "Exporting TXT file to " + strOutputFile);
-                                blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutLayer, strOutputFile, false, false);
-                                if (!blResult)
-                                {
-                                    MessageBox.Show("Error exporting output table to TXT file " + strOutputFile);
-                                    myFileFuncs.WriteLine(strLogFile, "Error exporting output table to TXT file " + strOutputFile);
-                                    this.Cursor = Cursors.Default;
-                                    myArcMapFuncs.ToggleDrawing();
-                                    myArcMapFuncs.ToggleTOC();
-                                    lblPartner.Text = "";
-                                    this.BringToFront();
-                                    this.Cursor = Cursors.Default;
-                                    return;
-                                }
                             }
 
-                        }
 
-                        lblPartner.Text = strPartner + ": Deleting temporary tables.";
-                        this.BringToFront();
 
-                        // Delete the temporary tables in the SQL database
-                        strStoredProcedure = "HLClearSppSubset";
-                        SqlCommand myCommand2 = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand2, "Schema", myConfig.GetDatabaseSchema());
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand2, "SpeciesTable", strTable);
-                        mySQLServerFuncs.AddSQLParameter(ref myCommand2, "UserId", strUserID);
-                        try
-                        {
-                            myFileFuncs.WriteLine(strLogFile, "Opening SQL connection");
-                            dbConn.Open();
-                            myFileFuncs.WriteLine(strLogFile, "Deleting temporary tables");
-                            string strRowsAffect = myCommand2.ExecuteNonQuery().ToString(); 
-                            myFileFuncs.WriteLine(strLogFile, "Closing SQL connection");
-                            dbConn.Close();
-                            myCommand2 = null;
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
-                                ex.Message);
-                            myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
-                                ex.Message);
-                            myArcMapFuncs.ToggleDrawing();
-                            myArcMapFuncs.ToggleTOC();
-                            lblPartner.Text = "";
+                            lblPartner.Text = strPartner + ": Deleting temporary tables.";
                             this.BringToFront();
-                            this.Cursor = Cursors.Default;
-                            return;
-                        }
 
-                        myFileFuncs.WriteLine(strLogFile, "Extracted " + strSQLLayer + " from " + strTable + " for partner " + strPartner + ".");
+                            // Delete the temporary tables in the SQL database
+                            strStoredProcedure = "HLClearSppSubset";
+                            SqlCommand myCommand2 = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand2, "Schema", myConfig.GetDatabaseSchema());
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand2, "SpeciesTable", strChosenSQLLayer);
+                            mySQLServerFuncs.AddSQLParameter(ref myCommand2, "UserId", strUserID);
+                            try
+                            {
+                                myFileFuncs.WriteLine(strLogFile, "Opening SQL connection");
+                                dbConn.Open();
+                                myFileFuncs.WriteLine(strLogFile, "Deleting temporary tables");
+                                string strRowsAffect = myCommand2.ExecuteNonQuery().ToString();
+                                myFileFuncs.WriteLine(strLogFile, "Closing SQL connection");
+                                dbConn.Close();
+                                myCommand2 = null;
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                                    ex.Message);
+                                myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
+                                    ex.Message);
+                                myArcMapFuncs.ToggleDrawing();
+                                myArcMapFuncs.ToggleTOC();
+                                lblPartner.Text = "";
+                                this.BringToFront();
+                                this.Cursor = Cursors.Default;
+                                return;
+                            }
+
+                            myFileFuncs.WriteLine(strLogFile, "Extracted " + strSQLLayer + " from " + strOutputTable + " for partner " + strPartner + ".");
+
+                        }
                         
+                        b++; // Next index.
                     }
-                    lblPartner.Text = "";
-                    lblPartner.Refresh();
-                    this.BringToFront();
-                    b++; // Next index.
                 }
+
+                lblPartner.Text = "";
+                lblPartner.Refresh();
+                this.BringToFront();
 
                 // Delete the final temporary spatial table.
-                string strSP = "HLClearSpatialSubset";
-                SqlCommand myCommand3 = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strSP, CommandType.StoredProcedure); // Note pass connection by ref here.
-                mySQLServerFuncs.AddSQLParameter(ref myCommand3, "Schema", myConfig.GetDatabaseSchema());
-                mySQLServerFuncs.AddSQLParameter(ref myCommand3, "SpeciesTable", strCurrentSpatialTable);
-                mySQLServerFuncs.AddSQLParameter(ref myCommand3, "UserId", strUserID);
-                try
+                if (strChosenSQLLayer != "")
                 {
-                    myFileFuncs.WriteLine(strLogFile, "Opening SQL connection");
-                    dbConn.Open();
-                    myFileFuncs.WriteLine(strLogFile, "Deleting temporary tables");
-                    string strRowsAffect = myCommand3.ExecuteNonQuery().ToString();
-                    myFileFuncs.WriteLine(strLogFile, "Closing SQL connection");
-                    dbConn.Close();
-                    myCommand3 = null;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
-                        ex.Message);
-                    myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
-                        ex.Message);
-                    myArcMapFuncs.ToggleDrawing();
-                    myArcMapFuncs.ToggleTOC();
-                    lblPartner.Text = "";
-                    this.BringToFront();
-                    this.Cursor = Cursors.Default;
-                    return;
+                    string strSP = "HLClearSpatialSubset";
+                    SqlCommand myCommand3 = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strSP, CommandType.StoredProcedure); // Note pass connection by ref here.
+                    mySQLServerFuncs.AddSQLParameter(ref myCommand3, "Schema", myConfig.GetDatabaseSchema());
+                    mySQLServerFuncs.AddSQLParameter(ref myCommand3, "SpeciesTable", strCurrentSpatialTable); 
+                    mySQLServerFuncs.AddSQLParameter(ref myCommand3, "UserId", strUserID);
+                    try
+                    {
+                        myFileFuncs.WriteLine(strLogFile, "Opening SQL connection");
+                        dbConn.Open();
+                        myFileFuncs.WriteLine(strLogFile, "Deleting temporary tables");
+                        string strRowsAffect = myCommand3.ExecuteNonQuery().ToString();
+                        myFileFuncs.WriteLine(strLogFile, "Closing SQL connection");
+                        dbConn.Close();
+                        myCommand3 = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                            ex.Message);
+                        myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
+                            ex.Message);
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
+                        lblPartner.Text = "";
+                        this.BringToFront();
+                        this.Cursor = Cursors.Default;
+                        return;
+                    }
                 }
 
 
@@ -1152,7 +1167,7 @@ namespace DataExtractor3
                 {
                     string strChosenFile = liChosenGISFiles[intLayerIndex];
                     // Does the partner want this layer?
-                    if (liFiles.Contains(strChosenFile))
+                    if (liMapFiles.Contains(strChosenFile))
                     {
                         lblPartner.Text = strPartner + ": Processing GIS layer " + strChosenFile + ".";
                         lblPartner.Refresh();
@@ -1174,8 +1189,8 @@ namespace DataExtractor3
                         //int intLayerIndex = liMapLayers.IndexOf(strGISLayer);
                         //foreach (int intLayerIndex in liMapLayerIndices)
                         //{
-                        string strLayerName = strGISLayer; 
-                        string strOutputName = liChosenGISFiles[intLayerIndex];
+                        string strLayerName = strGISLayer;
+                        string strOutputName = strGISLayer; // Input and output are the same name. //liChosenGISFiles[intLayerIndex];
                         string strLayerColumns = liChosenGISColumns[intLayerIndex];
                         string strLayerClause = liChosenGISClauses[intLayerIndex];
 
@@ -1281,6 +1296,9 @@ namespace DataExtractor3
                             }
 
                             myFileFuncs.WriteLine(strLogFile, "Extracted " + strOutputName + " from " + strGISLayer + " for partner " + strPartner + ".");
+                            // Clear selected features
+                            myArcMapFuncs.ClearSelection(strLayerName);
+
                         }
                         else
                         {
@@ -1350,6 +1368,9 @@ namespace DataExtractor3
                 // Log the completion of this partner.
                 myFileFuncs.WriteLine(strLogFile, "Process complete for partner " + strPartner);
             }
+
+            // Clear the selection on the partner layer
+            myArcMapFuncs.ClearSelection(strPartnerTable);
 
             lblPartner.Text = "";
             lblPartner.Refresh();

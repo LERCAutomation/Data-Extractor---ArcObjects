@@ -32,7 +32,9 @@ namespace HLDataExtractorConfig
         string ActiveColumn;
         string FormatColumn;
         string ExportColumn;
-        string FilesColumn;
+        //string FilesColumn;
+        string SQLFilesColumn;
+        string MapFilesColumn;
         string TagsColumn;
         List<string> SelectTypeOptions = new List<string>();
         int DefaultSelectType;
@@ -316,11 +318,22 @@ namespace HLDataExtractorConfig
 
                 try
                 {
-                    FilesColumn = xmlDataExtract["FilesColumn"].InnerText;
+                    SQLFilesColumn = xmlDataExtract["SQLFilesColumn"].InnerText;
                 }
                 catch
                 {
-                    MessageBox.Show("Could not locate the item 'FilesColumn' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Could not locate the item 'SQLFilesColumn' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    MapFilesColumn = xmlDataExtract["MapFilesColumn"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'MapFilesColumn' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     LoadedXML = false;
                     return;
                 }
@@ -464,12 +477,11 @@ namespace HLDataExtractorConfig
                 // Now cycle through them.
                 foreach(XmlNode aNode in SQLLayerCollection)
                 {
-                    string strName = aNode.Name; // The name of the SQL layer, as included in the Files in the partner table, will also be used for output.
-                    //strName = strName.Replace("_", " "); // Replace any underscores with spaces for better display.
+                    string strName = aNode.Name; // The name of the SQL layer, as included in the Files in the partner table.
                     SQLTables.Add(strName);
                     try
                     {
-                        SQLTableNames.Add(aNode["TableName"].InnerText);
+                        SQLTableNames.Add(aNode["TableName"].InnerText); // The OUTPUT name 
                     }
                     catch
                     {
@@ -637,7 +649,8 @@ namespace HLDataExtractorConfig
             AllPartnerColumns.Add(ActiveColumn);
             AllPartnerColumns.Add(FormatColumn);
             AllPartnerColumns.Add(ExportColumn);
-            AllPartnerColumns.Add(FilesColumn);
+            AllPartnerColumns.Add(SQLFilesColumn);
+            AllPartnerColumns.Add(MapFilesColumn);
             AllPartnerColumns.Add(TagsColumn);
             return AllPartnerColumns;
         }
@@ -672,10 +685,16 @@ namespace HLDataExtractorConfig
             return ExportColumn;
         }
 
-        public string GetFilesColumn()
+        public string GetSQLFilesColumn()
         {
-            return FilesColumn;
+            return SQLFilesColumn;
         }
+
+        public string GetMapFilesColumn()
+        {
+            return MapFilesColumn;
+        }
+
 
         public string GetTagsColumn()
         {

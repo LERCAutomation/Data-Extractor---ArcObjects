@@ -1153,7 +1153,36 @@ namespace HLArcMapModule
             return 0;
         }
 
+        public bool ClearSelection(string aFeatureLayerName, bool Messages = false)
+        {
+            if (!LayerExists(aFeatureLayerName))
+                return false;
 
+            IActiveView activeView = GetActiveView();
+            IFeatureLayer featureLayer = null;
+            try
+            {
+                featureLayer = (IFeatureLayer)GetLayer(aFeatureLayerName);
+            }
+            catch
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + aFeatureLayerName + " is not a feature layer");
+                return false;
+            }
+
+            if (activeView == null || featureLayer == null )
+            {
+                if (Messages)
+                    MessageBox.Show("Please check input for this tool");
+                return false;
+            }
+
+            // Clear selected features.
+            IFeatureSelection pFSel = (IFeatureSelection)featureLayer;
+            pFSel.Clear();
+            return true;
+        }
 
         public string GetOutputFileName(string aFileType, string anInitialDirectory = @"C:\")
         {
