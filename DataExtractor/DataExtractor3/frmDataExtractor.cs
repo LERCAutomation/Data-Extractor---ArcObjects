@@ -679,7 +679,7 @@ namespace DataExtractor3
                                     mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "SelectType", strSelectionDigit);
                                     mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "SpeciesTable", strChosenSQLLayer);
                                     mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "UserId", strUserID);
-                                    mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Split", strSplit);
+                                    //mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Split", strSplit);
 
                                     // Execute stored procedure.
                                     try
@@ -940,7 +940,7 @@ namespace DataExtractor3
                                     this.Cursor = Cursors.Default;
                                     return;
                                 }
-                                myArcMapFuncs.RemoveStandaloneTable(strSQLLayer);
+                                myArcMapFuncs.RemoveStandaloneTable(strOutputTable);
                             }
 
                             lblPartner.Text = strPartner + ": Writing output for " + strSQLLayer + " to text file.";

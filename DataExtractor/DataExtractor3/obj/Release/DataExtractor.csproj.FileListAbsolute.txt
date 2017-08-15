@@ -8,4 +8,5 @@ H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\b
 H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Release\DataExtractor3.dll
 H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Release\DataExtractor3.pdb
 H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Release\Interop.Shell32.dll
+H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\obj\Release\DataExtractor.csprojResolveAssemblyReference.cache
 H:\Dev\LERCAutomation\Data-Extractor---ArcObjects\DataExtractor\DataExtractor3\bin\Release\DataExtractor3.esriAddIn
