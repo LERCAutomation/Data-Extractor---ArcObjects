@@ -4,8 +4,8 @@
   <Description>Data Extractor: a tool to automate the bulk extraction of data using predefined boundaries.</Description>
   <Version>1.0</Version>
   <Image>Images\DataExtractor3.png</Image>
-  <Author>Sony</Author>
-  <Company></Company>
+  <Author>Hester Lyons</Author>
+  <Company>Hester Lyons Consulting</Company>
   <Date>25/07/2017</Date>
   <Targets>
     <Target name="Desktop" version="10.2" />
