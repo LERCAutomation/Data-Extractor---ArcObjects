@@ -14,19 +14,14 @@ The 'configuration' node is the 'root' node and signifies the start of the
 contents of the configuration file.
 
 The 'DataExtractor' node contains all of the entries relating to the
-MapBasic tool variables.
+ArcGIS tool variables.
 
 Each entry relates to a file, folder, table name, column name or SQL statement
-used by the MapBasic tool to select and export data for partners.
+used by the ArcGIS tool to select and export data for partners.
 -->
 
 <configuration>
 <DataExtractor>
-
-  <!-- The title to use for the program in the Tool menu -->
-  <ToolTitle>
-	<value>Data Extractor - Partners</value>
-  </ToolTitle>
 
   <!-- The existing file location where log files will be saved with output messages -->
   <LogFilePath>
@@ -109,7 +104,7 @@ used by the MapBasic tool to select and export data for partners.
   </ActiveColumn>
 
   <!-- The name of the column in the partner GIS layer containing the GIS format required for
-       the output records -->
+       the output records (SHP or GDB) -->
   <FormatColumn>
 	<value>GISformat</value>
   </FormatColumn>

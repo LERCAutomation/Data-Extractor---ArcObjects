@@ -49,7 +49,7 @@ namespace HLDataExtractorConfig
         List<string> SQLTableNames = new List<string>();
         List<string> SQLColumns = new List<string>();
         List<string> SQLClauses = new List<string>();
-        List<string> SQLSymbology = new List<string>(); // This will work differently from MapInfo.
+        //List<string> SQLSymbology = new List<string>(); // This will work differently from MapInfo.
 
         // Layer variables - Map layers.
         List<string> MapLayers = new List<string>();
@@ -512,16 +512,16 @@ namespace HLDataExtractorConfig
                         return;
                     }
 
-                    try
-                    {
-                        SQLSymbology.Add(aNode["Symbology"].InnerText);
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Could not locate the item 'Symbology' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        LoadedXML = false;
-                        return;
-                    }
+                    //try
+                    //{
+                    //    SQLSymbology.Add(aNode["Symbology"].InnerText);
+                    //}
+                    //catch
+                    //{
+                    //    MessageBox.Show("Could not locate the item 'Symbology' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //    LoadedXML = false;
+                    //    return;
+                    //}
                 }
 
                 // Now do the GIS Layers.
@@ -764,10 +764,10 @@ namespace HLDataExtractorConfig
             return SQLClauses;
         }
 
-        public List<string> GetSQLSymbology()
-        {
-            return SQLSymbology;
-        }
+        //public List<string> GetSQLSymbology()
+        //{
+        //    return SQLSymbology;
+        //}
 
 
         // 3. Layer variables - Map layers.

@@ -68,7 +68,7 @@ namespace DataExtractor3
         List<string> liSQLOutputNames = new List<string>();
         List<string> liSQLColumns = new List<string>();
         List<string> liSQLClauses = new List<string>();
-        List<string> liSQLLayerFiles = new List<string>();
+        //List<string> liSQLLayerFiles = new List<string>();
 
         bool blOpenForm; // Tracks all the way through whether the form should open.
         //bool blFormHasOpened; // Informs all controls whether the form has opened.
@@ -155,7 +155,7 @@ namespace DataExtractor3
             liSQLOutputNames = myConfig.GetSQLTableNames(); // Output names for each node.
             liSQLColumns = myConfig.GetSQLColumns();
             liSQLClauses = myConfig.GetSQLClauses();
-            liSQLLayerFiles = myConfig.GetSQLSymbology();
+            //liSQLLayerFiles = myConfig.GetSQLSymbology();
 
             string strPartnerTable = myConfig.GetPartnerTable();
             string strPartnerColumn = myConfig.GetPartnerColumn();
@@ -394,7 +394,7 @@ namespace DataExtractor3
             List<string> liChosenSQLOutputNames = liSQLOutputNames; //new List<string>();
             List<string> liChosenSQLColumns = liSQLColumns; //new List<string>();
             List<string> liChosenSQLClauses = liSQLClauses; //new List<string>();
-            List<string> liChosenSQLSymbology = liSQLLayerFiles; //new List<string>();
+            //List<string> liChosenSQLSymbology = liSQLLayerFiles; //new List<string>();
 
             //int b = 0;
             //foreach (string strTable in liSQLOutputNames)
@@ -581,7 +581,7 @@ namespace DataExtractor3
                             string strColumns = liChosenSQLColumns[b];
                             string strClause = liChosenSQLClauses[b];
                             string strOutputTable = liChosenSQLOutputNames[b];
-                            string strLayerFile = liChosenSQLSymbology[b];
+                            //string strLayerFile = liChosenSQLSymbology[b];
                             myFileFuncs.WriteLine(strLogFile, "Processing SQL layer " + strSQLLayer + " for output " + strOutputTable);
 
                             string strSpatialColumn = "";
