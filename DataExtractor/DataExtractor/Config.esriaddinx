@@ -1,0 +1,26 @@
+﻿<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>DataExtractor</Name>
+  <AddInID>{eb6517a4-65b0-4ce5-8e05-ff81e9c0ce92}</AddInID>
+  <Description>Bulk extract data using predefined boundaries.&#13;&#10;(c) 2017 SxBRC, 2017-2018 TVERC.</Description>
+  <Version>1.2.2</Version>
+  <Image>Images\DataExtractor.png</Image>
+  <Author>Hester Lyons</Author>
+  <Company>Hester Lyons Consulting</Company>
+  <Date>19/07/2018</Date>
+  <Targets>
+    <Target name="Desktop" version="10.1" />
+  </Targets>
+  <AddIn language="CLR" library="DataExtractor.dll" namespace="DataExtractor">
+    <ArcMap>
+      <Commands>
+        <Button id="Hester_Lyons_Consulting_DataExtractor"
+                class="DataExtractor"
+                message="Bulk extract data using predefined boundaries."
+                caption="Data Extractor"
+                tip="Data Extractor tool"
+                category="Add-In Controls"
+                image="Images\btnDataExtractor.png" />
+      </Commands>
+    </ArcMap>
+  </AddIn>
+</ESRI.Configuration>
