@@ -63,6 +63,7 @@ namespace HLStringFunctions
         {
             return "^" + Regex.Escape(pattern).
              Replace("\\*", ".*").
+             Replace("\\|", "|").
              Replace("\\?", ".") + "$";
         }
     }

@@ -64,6 +64,7 @@ namespace HLExtractorToolConfig
         bool DefaultConfidential;
         bool DefaultClearLogFile;
         bool DefaultUseCentroids;
+        bool HideUseCentroids;
         
         // Layer variables - SQL.
         List<string> SQLTables = new List<string>();
@@ -408,13 +409,16 @@ namespace HLExtractorToolConfig
                 try
                 {
                     DefaultUseCentroids = false;
+                    HideUseCentroids = false;
                     string strDefaultUseCentroids = xmlDataExtract["DefaultUseCentroids"].InnerText;
                     if (strDefaultUseCentroids.ToLower() == "yes" || strDefaultUseCentroids.ToLower() == "y")
                         DefaultUseCentroids = true;
+                    if (strDefaultUseCentroids == "")
+                        HideUseCentroids = true;
                 }
                 catch
                 {
-                    MessageBox.Show("Could not locate the item 'DefaultClearLogFile' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Could not locate the item 'DefaultUseCentroids' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     LoadedXML = false;
                     return;
                 }
@@ -732,7 +736,12 @@ namespace HLExtractorToolConfig
         {
             return DefaultUseCentroids;
         }
-       
+
+        public bool GetHideUseCentroids()
+        {
+            return HideUseCentroids;
+        }
+
         // 2. Layer variables - SQL.
         public List<string> GetSQLTables()
         {

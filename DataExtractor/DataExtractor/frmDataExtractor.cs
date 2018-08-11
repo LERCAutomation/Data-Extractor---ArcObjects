@@ -367,6 +367,15 @@ namespace DataExtractor
                 chkConfidential.Show();
             }
 
+            if (myConfig.GetHideUseCentroids())
+            {
+                chkUseCentroids.Hide();
+            }
+            else
+            {
+                chkUseCentroids.Show();
+            }
+
             // tidy up.
             wsSQLWorkspace = null;
         
@@ -733,12 +742,28 @@ namespace DataExtractor
                     //mySQLServerFuncs.AddSQLParameter(ref mySpatialCommand, "Split", strSplit);
 
                     // Execute stored procedure.
+                    int intCount = 0;
+                    bool blSuccess = true;
                     try
                     {
                         //myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
                         dbConn.Open();
                         myFileFuncs.WriteLine(strLogFile, "Executing stored procedure to make spatial / tags selection.");
                         string strRowsAffect = mySpatialCommand.ExecuteNonQuery().ToString();
+
+                        blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strIntermediateTable);
+                        if (blSuccess)
+                        {
+                            intCount = mySQLServerFuncs.CountRows(ref dbConn, strIntermediateTable);
+
+
+                            myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intCount.ToString() + " records.");
+                        }
+                        else
+                        {
+                            myFileFuncs.WriteLine(strLogFile, "Procedure returned no records.");
+                        }
+
                         // Close the connection again.
                         mySpatialCommand = null;
                         dbConn.Close();
@@ -891,8 +916,6 @@ namespace DataExtractor
 
                             // Open SQL connection to database and
                             // Run the stored procedure.
-                            bool blSuccess = true;
-                            int intCount = 0;
                             int intPolyCount = 0;
                             int intPointCount = 0;
                             try

@@ -231,7 +231,8 @@ namespace DataExtractor
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDataExtractor";
-            this.Text = "Data Extractor 1.2.2";
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            this.Text = "Data Extractor " + string.Format("{0}.{1}.{2}", version.Major, version.Minor, version.Build);
             this.Load += new System.EventHandler(this.frmDataExtractor_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

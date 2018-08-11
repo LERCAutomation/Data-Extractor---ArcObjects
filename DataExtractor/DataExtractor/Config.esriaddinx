@@ -2,11 +2,11 @@
   <Name>DataExtractor</Name>
   <AddInID>{eb6517a4-65b0-4ce5-8e05-ff81e9c0ce92}</AddInID>
   <Description>Bulk extract data using predefined boundaries.&#13;&#10;(c) 2017 SxBRC, 2017-2018 TVERC.</Description>
-  <Version>1.2.2</Version>
+  <Version>1.2.3</Version>
   <Image>Images\DataExtractor.png</Image>
   <Author>Hester Lyons</Author>
   <Company>Hester Lyons Consulting</Company>
-  <Date>19/07/2018</Date>
+  <Date>10/08/2018</Date>
   <Targets>
     <Target name="Desktop" version="10.1" />
   </Targets>
