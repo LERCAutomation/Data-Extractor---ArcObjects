@@ -133,6 +133,11 @@ used by the ArcGIS tool to select and export data for partners.
 	<value>PartnerTags</value>
   </TagsColumn>
 
+  <!-- The name of the column in the partner GIS layer containing the spatial geometry -->
+  <SpatialColumn>
+	<value>Shape</value>
+  </SpatialColumn>
+
 	<!-- The options for the selection types -->
   <SelectTypeOptions>
 	<value>Spatial Only;Survey Tags Only;Spatial and Survey Tags</value>

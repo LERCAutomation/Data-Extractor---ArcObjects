@@ -502,6 +502,7 @@ namespace DataExtractor
             string strSQLFilesColumn = myConfig.GetSQLFilesColumn();
             string strMapFilesColumn = myConfig.GetMapFilesColumn();
             string strTagsColumn = myConfig.GetTagsColumn();
+            string strPartnerSpatialColumn = myConfig.GetSpatialColumn();
 
             string strConfidentialClause = myConfig.GetConfidentialClause();
 
@@ -660,19 +661,6 @@ namespace DataExtractor
 
                 // Create the connection.
                 SqlConnection dbConn = mySQLServerFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-                string[] strGeometryFields = { "SP_GEOMETRY", "Shape" }; // Expand as required.
-                dbConn.Open();
-                string strPartnerSpatialColumn = "";
-                foreach (string strField in strGeometryFields)
-                {
-                    string strCheckTable = strDatabaseSchema + "." + strPartnerTable;
-                    if (mySQLServerFuncs.FieldExists(ref dbConn, strCheckTable, strField))
-                    {
-                        strPartnerSpatialColumn = strField;
-                    }
-
-                }
-                dbConn.Close();
 
                 // Note under current setup the CurrentSpatialTable never changes.
                 if (strChosenSQLLayer != "")
@@ -827,6 +815,7 @@ namespace DataExtractor
                             string strSpatialColumn = "";
                             string strSplit = "0"; // Do we need to split for polys / points?
                             // Is there a geometry field in the data requested?
+                            string[] strGeometryFields = { "SP_GEOMETRY", "Shape" }; // Expand as required.
                             foreach (string strField in strGeometryFields)
                             {
                                 if (strColumns.ToLower().Contains(strField.ToLower()))

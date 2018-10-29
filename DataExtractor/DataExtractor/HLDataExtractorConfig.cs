@@ -56,6 +56,7 @@ namespace HLExtractorToolConfig
         string SQLFilesColumn;
         string MapFilesColumn;
         string TagsColumn;
+        string SpatialColumn;
         List<string> SelectTypeOptions = new List<string>();
         int DefaultSelectType;
         // string RecMax; // Not sure we need this.
@@ -332,6 +333,17 @@ namespace HLExtractorToolConfig
                 catch
                 {
                     MessageBox.Show("Could not locate the item 'TagsColumn' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    SpatialColumn = xmlDataExtract["SpatialColumn"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'SpatialColumn' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     LoadedXML = false;
                     return;
                 }
@@ -700,6 +712,11 @@ namespace HLExtractorToolConfig
         public string GetTagsColumn()
         {
             return TagsColumn;
+        }
+
+        public string GetSpatialColumn()
+        {
+            return SpatialColumn;
         }
 
         public List<string> GetSelectTypeOptions()
