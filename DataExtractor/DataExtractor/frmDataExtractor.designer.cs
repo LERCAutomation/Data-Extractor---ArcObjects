@@ -48,6 +48,7 @@ namespace DataExtractor
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmDataExtractor));
             this.label1 = new System.Windows.Forms.Label();
             this.lstActivePartners = new System.Windows.Forms.ListBox();
             this.chkZip = new System.Windows.Forms.CheckBox();
@@ -228,6 +229,7 @@ namespace DataExtractor
             this.Controls.Add(this.chkZip);
             this.Controls.Add(this.lstActivePartners);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDataExtractor";

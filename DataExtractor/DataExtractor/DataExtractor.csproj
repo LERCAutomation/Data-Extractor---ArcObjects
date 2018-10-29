@@ -220,6 +220,9 @@
       <Private>False</Private>
     </COMReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\%24this.icon.ico" />
+  </ItemGroup>
   <PropertyGroup>
     <ZipFileExtension>esriAddIn</ZipFileExtension>
     <AddInTargetProduct>Desktop</AddInTargetProduct>
