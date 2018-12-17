@@ -495,42 +495,46 @@ namespace HLExtractorToolConfig
                 {
                     foreach (XmlNode aNode in SQLLayerCollection)
                     {
-                        string strName = aNode.Name; // The name of the SQL layer, as included in the Files in the partner table.
-                        SQLTables.Add(strName);
-                        try
+                        // Only process if not a comment
+                        if (aNode.NodeType != XmlNodeType.Comment)
                         {
-                            SQLTableNames.Add(aNode["TableName"].InnerText); // The OUTPUT name 
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Could not locate the item 'TableName' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            LoadedXML = false;
-                            return;
-                        }
 
-                        try
-                        {
-                            SQLColumns.Add(aNode["Columns"].InnerText);
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Could not locate the item 'Columns' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            LoadedXML = false;
-                            return;
-                        }
+                            string strName = aNode.Name; // The name of the SQL layer, as included in the Files in the partner table.
+                            SQLTables.Add(strName);
+                            try
+                            {
+                                SQLTableNames.Add(aNode["TableName"].InnerText); // The OUTPUT name 
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'TableName' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
 
-                        try
-                        {
-                            SQLClauses.Add(aNode["Clauses"].InnerText);
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Could not locate the item 'Clauses' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            LoadedXML = false;
-                            return;
+                            try
+                            {
+                                SQLColumns.Add(aNode["Columns"].InnerText);
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'Columns' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
+
+                            try
+                            {
+                                SQLClauses.Add(aNode["Clauses"].InnerText);
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'Clauses' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
                         }
                     }
-
                 }
 
                 // Now do the GIS Layers.
@@ -551,40 +555,45 @@ namespace HLExtractorToolConfig
                 {
                     foreach (XmlNode aNode in MapLayerCollection)
                     {
-                        string strName = aNode.Name; // The output name of the GIS layer (subset).
-                        //strName = strName.Replace("_", " "); // Replace any underscores with spaces for better display.
-                        MapLayers.Add(strName);
-                        try
+                        // Only process if not a comment
+                        if (aNode.NodeType != XmlNodeType.Comment)
                         {
-                            MapLayerNames.Add(aNode["LayerName"].InnerText); // The name of the source layer.
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Could not locate the item 'TableName' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            LoadedXML = false;
-                            return;
-                        }
 
-                        try
-                        {
-                            MapColumns.Add(aNode["Columns"].InnerText); // Columns don't need to be formatted.
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Could not locate the item 'Columns' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            LoadedXML = false;
-                            return;
-                        }
+                            string strName = aNode.Name; // The output name of the GIS layer (subset).
+                            //strName = strName.Replace("_", " "); // Replace any underscores with spaces for better display.
+                            MapLayers.Add(strName);
+                            try
+                            {
+                                MapLayerNames.Add(aNode["LayerName"].InnerText); // The name of the source layer.
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'TableName' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
 
-                        try
-                        {
-                            MapClauses.Add(aNode["Clause"].InnerText);
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Could not locate the item 'Clause' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            LoadedXML = false;
-                            return;
+                            try
+                            {
+                                MapColumns.Add(aNode["Columns"].InnerText); // Columns don't need to be formatted.
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'Columns' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
+
+                            try
+                            {
+                                MapClauses.Add(aNode["Clause"].InnerText);
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'Clause' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
                         }
                     }
                 }
