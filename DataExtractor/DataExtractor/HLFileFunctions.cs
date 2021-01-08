@@ -1,7 +1,7 @@
 ﻿// DataExtractor is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on existing boundaries.
 //
-// Copyright © 2017 SxBRC, 2017-2018 TVERC
+// Copyright © 2017 SxBRC, 2017-2019 TVERC, 2020 Andy Foy Consulting
 //
 // This file is part of DataExtractor.
 //
@@ -231,6 +231,25 @@ namespace HLFileFunctions
                 try
                 {
                     File.Delete(aFullPath);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            else
+                return true;
+
+        }
+
+        public bool RenameFile(string aOldPath, string aNewPath)
+        {
+            if (FileExists(aOldPath))
+            {
+                try
+                {
+                    File.Move(aOldPath, aNewPath);
                     return true;
                 }
                 catch

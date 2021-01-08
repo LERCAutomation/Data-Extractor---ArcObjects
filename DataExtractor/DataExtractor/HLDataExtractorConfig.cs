@@ -1,7 +1,7 @@
 ﻿// DataExtractor is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on existing boundaries.
 //
-// Copyright © 2017 SxBRC, 2017-2018 TVERC
+// Copyright © 2017 SxBRC, 2017-2019 TVERC, 2020 Andy Foy Consulting
 //
 // This file is part of DataExtractor.
 //
@@ -36,11 +36,13 @@ namespace HLExtractorToolConfig
     {
         // Declare all the variables.
         // Environment and menu variables.
+        bool DebugMode;
         string LogFilePath;
         string FileDSN;
         string ConnectionString;
         int TimeoutSeconds;
         string DefaultPath;
+        string PartnerFolder;
         string DatabaseSchema;
         //string TableListSQL;
         string IncludeWildcard;
@@ -54,31 +56,43 @@ namespace HLExtractorToolConfig
         string ExportColumn;
         //string FilesColumn;
         string SQLFilesColumn;
+        string SQLTableColumn;
         string MapFilesColumn;
         string TagsColumn;
         string SpatialColumn;
+        string PartnerClause;
         List<string> SelectTypeOptions = new List<string>();
         int DefaultSelectType;
         // string RecMax; // Not sure we need this.
         bool DefaultZip;
-        string ConfidentialClause;
-        bool DefaultConfidential;
+        string ExclusionClause;
+        bool DefaultExclusion;
         bool DefaultClearLogFile;
         bool DefaultUseCentroids;
         bool HideUseCentroids;
+        bool DefaultUploadToServer;
+        bool HideUploadToServer;
         
         // Layer variables - SQL.
         List<string> SQLTables = new List<string>();
-        List<string> SQLTableNames = new List<string>();
+        List<string> SQLOutputNames = new List<string>();
+        List<string> SQLOutputTypes = new List<string>();
         List<string> SQLColumns = new List<string>();
-        List<string> SQLClauses = new List<string>();
-        //List<string> SQLSymbology = new List<string>(); // This will work differently from MapInfo.
+        List<string> SQLWhereClauses = new List<string>();
+        List<string> SQLOrderClauses = new List<string>();
+        List<string> SQLMacroNames = new List<string>();
+        List<string> SQLMacroParms = new List<string>();
 
         // Layer variables - Map layers.
-        List<string> MapLayers = new List<string>();
-        List<string> MapLayerNames = new List<string>();
+        List<string> MapTables = new List<string>();
+        List<string> MapTableNames = new List<string>();
+        List<string> MapOutputNames = new List<string>();
+        List<string> MapOutputTypes = new List<string>();
         List<string> MapColumns = new List<string>();
-        List<string> MapClauses = new List<string>();
+        List<string> MapWhereClauses = new List<string>();
+        List<string> MapOrderClauses = new List<string>();
+        List<string> MapMacroNames = new List<string>();
+        List<string> MapMacroParms = new List<string>();
 
         bool FoundXML;
         bool LoadedXML;
@@ -116,7 +130,19 @@ namespace HLExtractorToolConfig
                 xmlDataExtract = (XmlElement)currNode;
 
                 // XML loaded successfully; get all of the detail in the Config object.
-                
+
+                try
+                {
+                    DebugMode = false;
+                    string strDebugMode = xmlDataExtract["Debug"].InnerText;
+                    if (strDebugMode.ToLower() == "yes" || strDebugMode.ToLower() == "y")
+                        DebugMode = true;
+                }
+                catch
+                {
+                    DebugMode = false;
+                }
+
                 try
                 {
                     LogFilePath = xmlDataExtract["LogFilePath"].InnerText;
@@ -189,6 +215,17 @@ namespace HLExtractorToolConfig
                 catch
                 {
                     MessageBox.Show("Could not locate the item 'DefaultPath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    PartnerFolder = xmlDataExtract["PartnerFolder"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'PartnerFolder' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     LoadedXML = false;
                     return;
                 }
@@ -306,6 +343,17 @@ namespace HLExtractorToolConfig
 
                 try
                 {
+                    SQLTableColumn = xmlDataExtract["SQLTableColumn"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'SQLTableColumn' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
                     SQLFilesColumn = xmlDataExtract["SQLFilesColumn"].InnerText;
                 }
                 catch
@@ -350,6 +398,17 @@ namespace HLExtractorToolConfig
 
                 try
                 {
+                    PartnerClause = xmlDataExtract["PartnerClause"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'PartnerClause' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
                     strRawText = xmlDataExtract["SelectTypeOptions"].InnerText;
                 }
                 catch
@@ -358,6 +417,7 @@ namespace HLExtractorToolConfig
                     LoadedXML = false;
                     return;
                 }
+
                 // Process the selection type options.
                 try
                 {
@@ -406,6 +466,45 @@ namespace HLExtractorToolConfig
 
                 try
                 {
+                    DefaultZip = false;
+                    string strDefaultZip = xmlDataExtract["DefaultZip"].InnerText;
+                    if (strDefaultZip.ToLower() == "yes" || strDefaultZip.ToLower() == "y")
+                        DefaultZip = true;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultZip' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    ExclusionClause = xmlDataExtract["ExclusionClause"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'ExclusionClause' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    DefaultExclusion = false;
+                    string strDefaultExclusion = xmlDataExtract["DefaultExclusion"].InnerText;
+                    if (strDefaultExclusion.ToLower() == "yes" || strDefaultExclusion.ToLower() == "y")
+                        DefaultExclusion = true;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultExclusion' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
                     DefaultClearLogFile = false;
                     string strDefaultClearLogFile = xmlDataExtract["DefaultClearLogFile"].InnerText;
                     if (strDefaultClearLogFile.ToLower() == "yes" || strDefaultClearLogFile.ToLower() == "y")
@@ -437,51 +536,28 @@ namespace HLExtractorToolConfig
 
                 try
                 {
-                    DefaultZip = false;
-                    string strDefaultZip = xmlDataExtract["DefaultZip"].InnerText;
-                    if (strDefaultZip.ToLower() == "yes" || strDefaultZip.ToLower() == "y")
-                        DefaultZip = true;
+                    DefaultUploadToServer = false;
+                    HideUploadToServer = false;
+                    string strDefaultUploadToServer = xmlDataExtract["DefaultUploadToServer"].InnerText;
+                    if (strDefaultUploadToServer.ToLower() == "yes" || strDefaultUploadToServer.ToLower() == "y")
+                        DefaultUploadToServer = true;
+                    if (strDefaultUploadToServer == "")
+                        HideUploadToServer = true;
                 }
                 catch
                 {
-                    MessageBox.Show("Could not locate the item 'DefaultZip' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Could not locate the item 'DefaultUploadToServer' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     LoadedXML = false;
                     return;
                 }
-
-                try
-                {
-                    ConfidentialClause = xmlDataExtract["ConfidentialClause"].InnerText;
-                }
-                catch
-                {
-                    MessageBox.Show("Could not locate the item 'ConfidentialClause' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    LoadedXML = false;
-                    return;
-                }
-
-                try
-                {
-                    DefaultConfidential = false;
-                    string strDefaultConfidential = xmlDataExtract["DefaultConfidential"].InnerText;
-                    if (strDefaultConfidential.ToLower() == "yes" || strDefaultConfidential.ToLower() == "y")
-                        DefaultConfidential = true;
-                }
-                catch
-                {
-                    MessageBox.Show("Could not locate the item 'DefaultConfidential' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    LoadedXML = false;
-                    return;
-                }
-
 
                 // Layer options. 
                 // SQL layers first.
                 // Firstly, get all the entries.
-                XmlElement SQLLayerCollection = null;
+                XmlElement SQLFileCollection = null;
                 try
                 {
-                    SQLLayerCollection = xmlDataExtract["SQLTables"];
+                    SQLFileCollection = xmlDataExtract["SQLTables"];
                 }
                 catch
                 {
@@ -491,9 +567,9 @@ namespace HLExtractorToolConfig
                 }
 
                 // Now cycle through them.
-                if (SQLLayerCollection != null)
+                if (SQLFileCollection != null)
                 {
-                    foreach (XmlNode aNode in SQLLayerCollection)
+                    foreach (XmlNode aNode in SQLFileCollection)
                     {
                         // Only process if not a comment
                         if (aNode.NodeType != XmlNodeType.Comment)
@@ -501,15 +577,25 @@ namespace HLExtractorToolConfig
 
                             string strName = aNode.Name; // The name of the SQL layer, as included in the Files in the partner table.
                             SQLTables.Add(strName);
+
                             try
                             {
-                                SQLTableNames.Add(aNode["TableName"].InnerText); // The OUTPUT name 
+                                SQLOutputNames.Add(aNode["OutputName"].InnerText); // The OUTPUT name 
                             }
                             catch
                             {
-                                MessageBox.Show("Could not locate the item 'TableName' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show("Could not locate the item 'OutputName' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 LoadedXML = false;
                                 return;
+                            }
+
+                            try
+                            {
+                                SQLOutputTypes.Add(aNode["OutputType"].InnerText); // The OUTPUT type 
+                            }
+                            catch
+                            {
+                                SQLOutputTypes.Add("");
                             }
 
                             try
@@ -525,35 +611,60 @@ namespace HLExtractorToolConfig
 
                             try
                             {
-                                SQLClauses.Add(aNode["Clauses"].InnerText);
+                                SQLWhereClauses.Add(aNode["WhereClause"].InnerText);
                             }
                             catch
                             {
-                                MessageBox.Show("Could not locate the item 'Clauses' for SQL layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                LoadedXML = false;
-                                return;
+                                SQLWhereClauses.Add("");
+                            }
+
+                            try
+                            {
+                                SQLOrderClauses.Add(aNode["OrderClause"].InnerText);
+                            }
+                            catch
+                            {
+                                SQLOrderClauses.Add("");
+                            }
+
+                            try
+                            {
+                                SQLMacroNames.Add(aNode["MacroName"].InnerText);
+                            }
+                            catch
+                            {
+                                SQLMacroNames.Add("");
+                            }
+
+                            try
+                            {
+                                SQLMacroParms.Add(aNode["MacroParm"].InnerText);
+                            }
+                            catch
+                            {
+                                SQLMacroParms.Add("");
                             }
                         }
                     }
                 }
 
                 // Now do the GIS Layers.
-                XmlElement MapLayerCollection = null;
+                XmlElement MapTableCollection = null;
                 try
                 {
-                    MapLayerCollection = xmlDataExtract["MapLayers"];
+                    MapTableCollection = xmlDataExtract["MapTables"];
                 }
                 catch
                 {
-                    MessageBox.Show("Could not locate the item 'MapLayers' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Could not locate the item 'MapTables' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     LoadedXML = false;
                     return;
                 }
 
                 // Now cycle through them.
-                if (MapLayerCollection != null)
+                if (MapTableCollection != null)
                 {
-                    foreach (XmlNode aNode in MapLayerCollection)
+                    foreach (XmlNode aNode in MapTableCollection)
                     {
                         // Only process if not a comment
                         if (aNode.NodeType != XmlNodeType.Comment)
@@ -561,16 +672,38 @@ namespace HLExtractorToolConfig
 
                             string strName = aNode.Name; // The output name of the GIS layer (subset).
                             //strName = strName.Replace("_", " "); // Replace any underscores with spaces for better display.
-                            MapLayers.Add(strName);
+
+                            MapTables.Add(strName);
+
                             try
                             {
-                                MapLayerNames.Add(aNode["LayerName"].InnerText); // The name of the source layer.
+                                MapTableNames.Add(aNode["TableName"].InnerText); // The name of the source layer.
                             }
                             catch
                             {
-                                MessageBox.Show("Could not locate the item 'TableName' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show("Could not locate the item 'OutputName' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 LoadedXML = false;
                                 return;
+                            }
+
+                            try
+                            {
+                                MapOutputNames.Add(aNode["OutputName"].InnerText); // The output name.
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not locate the item 'OutputName' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                LoadedXML = false;
+                                return;
+                            }
+
+                            try
+                            {
+                                MapOutputTypes.Add(aNode["OutputType"].InnerText); // The output type.
+                            }
+                            catch
+                            {
+                                MapOutputTypes.Add("");
                             }
 
                             try
@@ -586,13 +719,38 @@ namespace HLExtractorToolConfig
 
                             try
                             {
-                                MapClauses.Add(aNode["Clause"].InnerText);
+                                MapWhereClauses.Add(aNode["WhereClause"].InnerText);
                             }
                             catch
                             {
-                                MessageBox.Show("Could not locate the item 'Clause' for map layer " + strName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                LoadedXML = false;
-                                return;
+                                MapWhereClauses.Add("");
+                            }
+
+                            try
+                            {
+                                MapOrderClauses.Add(aNode["OrderClause"].InnerText);
+                            }
+                            catch
+                            {
+                                MapOrderClauses.Add("");
+                            }
+
+                            try
+                            {
+                                MapMacroNames.Add(aNode["Macro"].InnerText);
+                            }
+                            catch
+                            {
+                                MapMacroNames.Add("");
+                            }
+
+                            try
+                            {
+                                MapMacroParms.Add(aNode["MacroParm"].InnerText);
+                            }
+                            catch
+                            {
+                                MapMacroParms.Add("");
                             }
                         }
                     }
@@ -614,6 +772,11 @@ namespace HLExtractorToolConfig
         }
 
         // General parameters.
+        public bool GetDebugMode()
+        {
+            return DebugMode;
+        }
+
         public string GetLogFilePath()
         {
             return LogFilePath;
@@ -637,6 +800,11 @@ namespace HLExtractorToolConfig
         public string GetDefaultPath()
         {
             return DefaultPath;
+        }
+
+        public string GetPartnerFolder()
+        {
+            return PartnerFolder;
         }
 
         public string GetDatabaseSchema()
@@ -671,6 +839,7 @@ namespace HLExtractorToolConfig
             AllPartnerColumns.Add(ActiveColumn);
             AllPartnerColumns.Add(FormatColumn);
             AllPartnerColumns.Add(ExportColumn);
+            AllPartnerColumns.Add(SQLTableColumn);
             AllPartnerColumns.Add(SQLFilesColumn);
             AllPartnerColumns.Add(MapFilesColumn);
             AllPartnerColumns.Add(TagsColumn);
@@ -707,6 +876,11 @@ namespace HLExtractorToolConfig
             return ExportColumn;
         }
 
+        public string GetSQLTableColumn()
+        {
+            return SQLTableColumn;
+        }
+
         public string GetSQLFilesColumn()
         {
             return SQLFilesColumn;
@@ -728,6 +902,11 @@ namespace HLExtractorToolConfig
             return SpatialColumn;
         }
 
+        public string GetPartnerClause()
+        {
+            return PartnerClause;
+        }
+
         public List<string> GetSelectTypeOptions()
         {
             return SelectTypeOptions;
@@ -743,14 +922,14 @@ namespace HLExtractorToolConfig
             return DefaultZip;
         }
 
-        public string GetConfidentialClause()
+        public string GetExclusionClause()
         {
-            return ConfidentialClause;
+            return ExclusionClause;
         }
 
-        public bool GetDefaultConfidential()
+        public bool GetDefaultExclusion()
         {
-            return DefaultConfidential;
+            return DefaultExclusion;
         }
 
         public bool GetDefaultClearLogFile()
@@ -768,23 +947,38 @@ namespace HLExtractorToolConfig
             return HideUseCentroids;
         }
 
+        public bool GetDefaultUploadToServer()
+        {
+            return DefaultUploadToServer;
+        }
+
+        public bool GetHideUploadToServer()
+        {
+            return HideUploadToServer;
+        }
+
         // 2. Layer variables - SQL.
         public List<string> GetSQLTables()
         {
             return SQLTables; // These are the subsets.
         }
 
-        public List<string> GetSQLTableNames()
+        public List<string> GetSQLOutputNames()
         {
-            return SQLTableNames;
+            return SQLOutputNames;
         }
 
-        public List<string> GetUniqueSQLTableNames()
+        public List<string> GetSQLOutputTypes()
+        {
+            return SQLOutputTypes;
+        }
+
+        public List<string> GetUniqueSQLOutputNames()
         {
             List<string> liUniqueSQLNames = new List<string>();
-            foreach (string strName in SQLTableNames)
+            foreach (string strName in SQLOutputNames)
             {
-                if (!liUniqueSQLNames.Contains(strName))
+                if (!liUniqueSQLNames.Contains(strName, StringComparer.OrdinalIgnoreCase))
                     liUniqueSQLNames.Add(strName);
             }
             return liUniqueSQLNames;
@@ -795,38 +989,57 @@ namespace HLExtractorToolConfig
             return SQLColumns;
         }
 
-        public List<string> GetSQLClauses()
+        public List<string> GetSQLWhereClauses()
         {
-            return SQLClauses;
+            return SQLWhereClauses;
         }
 
-        //public List<string> GetSQLSymbology()
-        //{
-        //    return SQLSymbology;
-        //}
+        public List<string> GetSQLOrderClauses()
+        {
+            return SQLOrderClauses;
+        }
 
+        public List<string> GetSQLMacroNames()
+        {
+            return SQLMacroNames;
+        }
+
+        public List<string> GetSQLMacroParms()
+        {
+            return SQLMacroParms;
+        }
 
         // 3. Layer variables - Map layers.
 
-        public List<string> GetMapLayers()
+        public List<string> GetMapTables()
         {
-            return MapLayers; // The names of the subsets.
+            return MapTables; // The names of the subsets.
         }
 
-        public List<string> GetMapLayerNames()
+        public List<string> GetMapTableNames()
         {
-            return MapLayerNames; // The names of the source layers.
+            return MapTableNames; // The names of the source layers.
         }
 
-        public List<string> GetUniqueMapLayerNames()
+        public List<string> GetUniqueMapTableNames()
         {
             List<string> liUniqueMapNames = new List<string>();
-            foreach (string strName in MapLayerNames)
+            foreach (string strName in MapTableNames)
             {
-                if (!liUniqueMapNames.Contains(strName))
+                if (!liUniqueMapNames.Contains(strName, StringComparer.OrdinalIgnoreCase))
                     liUniqueMapNames.Add(strName);
             }
             return liUniqueMapNames;
+        }
+
+        public List<string> GetMapOutputNames()
+        {
+            return MapOutputNames; // The names of the outputs.
+        }
+
+        public List<string> GetMapOutputTypes()
+        {
+            return MapOutputTypes; // The type of the outputs.
         }
 
         public List<string> GetMapColumns()
@@ -834,9 +1047,24 @@ namespace HLExtractorToolConfig
             return MapColumns;
         }
 
-        public List<string> GetMapClauses()
+        public List<string> GetMapWhereClauses()
         {
-            return MapClauses;
+            return MapWhereClauses;
+        }
+
+        public List<string> GetMapOrderClauses()
+        {
+            return MapOrderClauses;
+        }
+
+        public List<string> GetMapMacroNames()
+        {
+            return MapMacroNames;
+        }
+
+        public List<string> GetMapMacroParms()
+        {
+            return MapMacroParms;
         }
 
 

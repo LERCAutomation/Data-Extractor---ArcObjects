@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("DataExtractor")]
 [assembly: AssemblyDescription("DataExtractor is an ArcGIS add-in used to bulk extract data using predefined boundaries.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Hester Lyons Consulting")]
+[assembly: AssemblyCompany("Hester Lyons Consulting & Andy Foy Consulting")]
 [assembly: AssemblyProduct("DataExtractor")]
-[assembly: AssemblyCopyright("Copyright © 2017 SxBRC, 2017-2018 TVERC")]
+[assembly: AssemblyCopyright("Copyright © 2017 SxBRC, 2017-2019 TVERC, 2020 Andy Foy Consulting")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.2.5")]
-[assembly: AssemblyFileVersion("1.2.5")]
+[assembly: AssemblyVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.0.0")]

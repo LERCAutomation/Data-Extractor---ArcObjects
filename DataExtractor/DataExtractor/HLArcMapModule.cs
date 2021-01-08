@@ -1,7 +1,7 @@
 ﻿// DataExtractor is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on existing boundaries.
 //
-// Copyright © 2017 SxBRC, 2017-2018 TVERC
+// Copyright © 2017 SxBRC, 2017-2019 TVERC, 2020 Andy Foy Consulting
 //
 // This file is part of DataExtractor.
 //
@@ -97,21 +97,21 @@ namespace HLArcMapModule
 
             IWorkspaceFactory pWSF;
             // What type of output file it it? This defines what kind of workspace factory will be returned.
-            if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".gdb")
+            if (aFilePath.Substring(aFilePath.Length - 4, 4).ToLower() == ".gdb")
             {
                 // It is a file geodatabase file.
                 Type t = Type.GetTypeFromProgID("esriDataSourcesGDB.FileGDBWorkspaceFactory");
                 System.Object obj = Activator.CreateInstance(t);
                 pWSF = obj as IWorkspaceFactory;
             }
-            else if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".mdb")
+            else if (aFilePath.Substring(aFilePath.Length - 4, 4).ToLower() == ".mdb")
             {
                 // Personal geodatabase.
                 Type t = Type.GetTypeFromProgID("esriDataSourcesGDB.AccessWorkspaceFactory");
                 System.Object obj = Activator.CreateInstance(t);
                 pWSF = obj as IWorkspaceFactory;
             }
-            else if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".sde")
+            else if (aFilePath.Substring(aFilePath.Length - 4, 4).ToLower() == ".sde")
             {
                 // ArcSDE connection
                 Type t = Type.GetTypeFromProgID("esriDataSourcesGDB.SdeWorkspaceFactory");
@@ -177,7 +177,7 @@ namespace HLArcMapModule
                 else
                     return false;
             }
-            else if (aFilePath.Substring(aFilePath.Length - 3, 3) == "sde")
+            else if (aFilePath.Substring(aFilePath.Length - 3, 3).ToLower() == "sde")
             {
                 // It's an SDE class
                 // Not handled. We know the table exists.
@@ -206,7 +206,7 @@ namespace HLArcMapModule
         {
             // Check input first.
             string aTestPath = aFilePath;
-            if (aFilePath.Contains(".sde"))
+            if (aFilePath.ToLower().Contains(".sde"))
             {
                 aTestPath = myFileFuncs.GetDirectoryName(aFilePath);
             }
@@ -231,7 +231,6 @@ namespace HLArcMapModule
             }
             
         }
-
 
         public IFeatureClass GetFeatureClass(string aFullPath, bool Messages = false)
         {
@@ -311,7 +310,7 @@ namespace HLArcMapModule
             {
                 if (!(pLayer is ICompositeLayer))
                 {
-                    if (pLayer.Name == aName)
+                    if (pLayer.Name.Equals(aName, StringComparison.OrdinalIgnoreCase))
                     {
                         pTargetLayer = pLayer;
                         blFoundit = true;
@@ -355,6 +354,51 @@ namespace HLArcMapModule
             return true;
         }
 
+        public bool FieldExists(ILayer aLayer, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+            IFeatureLayer pFL = null;
+            try
+            {
+                pFL = (IFeatureLayer)aLayer;
+            }
+            catch
+            {
+                if (Messages)
+                    MessageBox.Show("The layer is not a feature layer");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function FieldExists returned the following error: The input layer aLayer is not a feature layer.");
+                return false;
+            }
+            IFeatureClass pFC = pFL.FeatureClass;
+            return FieldExists(pFC, aFieldName);
+        }
+
+        public bool FieldExists(IFeatureClass aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+
+            //int aTest;
+            IFields theFields = aFeatureClass.Fields;
+            return FieldExists(theFields, aFieldName, aLogFile, Messages);
+            //aTest = theFields.FindField(aFieldName);
+            //if (aTest == -1)
+            //{
+            //    aTest = theFields.FindFieldByAliasName(aFieldName);
+            //}
+
+            //if (aTest == -1) return false;
+            //return true;
+        }
+
+        public bool FieldExists(IFields theFields, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+            int aTest;
+            aTest = theFields.FindField(aFieldName);
+            if (aTest == -1)
+                aTest = theFields.FindFieldByAliasName(aFieldName);
+            if (aTest == -1) return false;
+            return true;
+        }
+
         public bool KeepSelectedFields(string aFeatureClassOrLayer, List<string> aFieldList, bool Messages = false)
         {
             // This function deletes all the fields from aFeatureClassOrLayer that are not required and are not in aFieldList.
@@ -391,10 +435,10 @@ namespace HLArcMapModule
             for (int i = 0; i < pFields.FieldCount; i++)
             {
                 IField pField = pFields.get_Field(i);
-                if (aFieldList.IndexOf(pField.Name) == -1 && !pField.Required)
                 // Does it exist in the 'keep' list or is it required?
+                if (aFieldList.IndexOf(pField.Name) == -1 && !pField.Required)
                 {
-                    // If not, add to te delete list.
+                    // If not, add to the delete list.
                     strDeleteFields.Add(pField.Name);
                 }
             }
@@ -403,6 +447,53 @@ namespace HLArcMapModule
             foreach (string strField in strDeleteFields)
             {
                 DeleteField(pFC, strField);
+            }
+            return true;
+        }
+
+        public bool KeepSelectedTableFields(string aTableName, List<string> aFieldList, bool Messages = false)
+        {
+            // firstly get the Table
+            // Does it exist? // Does not work for GeoDB tables!!
+            if (!myFileFuncs.FileExists(aTableName))
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The table " + aTableName + " does not exist");
+                }
+                return false;
+            }
+            string aFilePath = myFileFuncs.GetDirectoryName(aTableName);
+            string aTabName = myFileFuncs.GetFileName(aTableName);
+
+            ITable myTab = null;
+            myTab = GetTable(aFilePath, aTabName);
+            if (myTab == null)
+            {
+                if (Messages) MessageBox.Show("The table " + aTableName + " doesn't exist.");
+                return false; // Dataset doesn't exist.
+            }
+
+            // Now drop any fields from the output that we don't want.
+            IFields pFields = myTab.Fields;
+            List<string> strDeleteFields = new List<string>();
+
+            // Make a list of fields to delete.
+            for (int i = 0; i < pFields.FieldCount; i++)
+            {
+                IField pField = pFields.get_Field(i);
+                if (aFieldList.IndexOf(pField.Name) == -1 && !pField.Required)
+                // Does it exist in the 'keep' list or is it required?
+                {
+                    // If not, add to the delete list.
+                    strDeleteFields.Add(pField.Name);
+                }
+            }
+
+            //Delete the listed fields.
+            foreach (string strField in strDeleteFields)
+            {
+                DeleteField(myTab, strField);
             }
             return true;
         }
@@ -422,7 +513,23 @@ namespace HLArcMapModule
                 MessageBox.Show("Cannot delete field " + aFieldName + ". System error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
+        }
 
+        public bool DeleteField(ITable aTable, string aFieldName)
+        {
+            // Get the fields collection
+            int intIndex = aTable.Fields.FindField(aFieldName);
+            IField pField = aTable.Fields.get_Field(intIndex);
+            try
+            {
+                aTable.DeleteField(pField);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Cannot delete field " + aFieldName + ". System error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
         }
 
         public List<string> FieldsExist(string aFilePath, string aDatasetName, List<string> FieldNames, bool Messages = false)
@@ -430,10 +537,69 @@ namespace HLArcMapModule
             List<string> FieldsThatExist = new List<string>();
             foreach (string aFieldName in FieldNames)
             {
-                if (FieldExists(aFilePath, aDatasetName,aFieldName))
+                if (FieldExists(aFilePath, aDatasetName, aFieldName))
                     FieldsThatExist.Add(aFieldName);
             }
             return FieldsThatExist;
+        }
+
+        public List<string> FieldsExist(string aName, List<string> FieldNames, bool Messages = false)
+        {
+            IFeatureLayer featureLayer = null;
+            try
+            {
+                featureLayer = (IFeatureLayer)GetLayer(aName);
+
+                List<string> FieldsThatExist = new List<string>();
+                foreach (string aFieldName in FieldNames)
+                {
+                    if (FieldExists(featureLayer, aFieldName))
+                        FieldsThatExist.Add(aFieldName);
+                }
+                return FieldsThatExist;
+            }
+            catch
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + aName + " is not a feature layer");
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// Calculate the total row length for a table.
+        /// </summary>
+        /// <param name="aName"></param>
+        /// <param name="Messages"></param>
+        /// <returns></returns>
+        public int GetRowLength(string aFilePath, string aDatasetName, bool Messages = false)
+        {
+            ITable myTab = GetTable(aFilePath, aDatasetName);
+            if (myTab == null) return 0; // Dataset doesn't exist.
+
+            IFields theFields = myTab.Fields;
+            int intFieldCount = theFields.FieldCount;
+            int intRowLength = 1;
+
+            // iterate through the fields in the collection.
+            for (int i = 0; i < intFieldCount; i++)
+            {
+                // Get the field at the given index.
+                IField pField = theFields.get_Field(i);
+                string strField = pField.Name;
+                string strType = pField.Type.ToString();
+
+                int intFieldLen;
+                if (strType == "esriFieldTypeInteger")
+                    intFieldLen = 10;
+                else if (strType == "esriFieldTypeGeometry")
+                    intFieldLen = 0;
+                else
+                    intFieldLen = pField.Length;
+                intRowLength = intRowLength + intFieldLen;
+            }
+
+            return intRowLength;
         }
 
         public bool AddLayerFromFClass(IFeatureClass theFeatureClass, bool Messages = false)
@@ -519,7 +685,7 @@ namespace HLArcMapModule
                 else
                     return false;
             }
-            else if (aFilePath.Substring(aFilePath.Length - 3, 3) == "sde")
+            else if (aFilePath.Substring(aFilePath.Length - 3, 3).ToLower() == "sde")
             {
                 // It's an SDE class
                 // Not handled. We know the table exists.
@@ -547,7 +713,7 @@ namespace HLArcMapModule
         {
             // Check input first.
             string aTestPath = aFilePath;
-            if (aFilePath.Contains(".sde"))
+            if (aFilePath.ToLower().Contains(".sde"))
             {
                 aTestPath = myFileFuncs.GetDirectoryName(aFilePath);
             }
@@ -557,8 +723,8 @@ namespace HLArcMapModule
                 return null;
             }
             bool blText = false;
-            string strExt = aDatasetName.Substring(aDatasetName.Length - 4, 4);
-            if (strExt == ".txt" || strExt == ".csv" || strExt == ".tab")
+            string strExt = aDatasetName.Substring(aDatasetName.Length - 4, 4).ToLower();
+            if (strExt.ToLower() == ".txt" || strExt.ToLower() == ".csv" || strExt.ToLower() == ".tab")
             {
                 blText = true;
             }
@@ -577,13 +743,13 @@ namespace HLArcMapModule
         public ITable GetTable(string aTableLayer, bool Messages = false)
         {
             IMap pMap = GetMap();
-            IStandaloneTableCollection pColl = (IStandaloneTableCollection)pMap;
+            ITableCollection pColl = (ITableCollection)pMap;
             IStandaloneTable pThisTable = null;
 
-            for (int I = 0; I < pColl.StandaloneTableCount; I++)
+            for (int I = 0; I < pColl.TableCount; I++)
             {
-                pThisTable = pColl.StandaloneTable[I];
-                if (pThisTable.Name == aTableLayer)
+                pThisTable = (IStandaloneTable)pColl.Table[I];
+                if (pThisTable.Name.Equals(aTableLayer, StringComparison.OrdinalIgnoreCase))
                 {
                     ITable myTable = pThisTable.Table;
                     return myTable;
@@ -745,7 +911,7 @@ namespace HLArcMapModule
             for (int I = 0; I < pColl.StandaloneTableCount; I++)
             {
                 pThisTable = pColl.StandaloneTable[I];
-                if (pThisTable.Name == aLayerName)
+                if (pThisTable.Name.Equals(aLayerName, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                     //pColl.RemoveStandaloneTable(pThisTable);
@@ -779,7 +945,7 @@ namespace HLArcMapModule
             for (int I = 0; I < pColl.StandaloneTableCount; I++)
             {
                 pThisTable = pColl.StandaloneTable[I];
-                if (pThisTable.Name == aTableName)
+                if (pThisTable.Name.Equals(aTableName, StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
@@ -824,7 +990,7 @@ namespace HLArcMapModule
             {
                 if (!(pLayer is IGroupLayer))
                 {
-                    if (pLayer.Name == aLayerName)
+                    if (pLayer.Name.Equals(aLayerName, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
@@ -861,7 +1027,7 @@ namespace HLArcMapModule
             {
                 if (pLayer is IGroupLayer)
                 {
-                    if (pLayer.Name == aGroupLayerName)
+                    if (pLayer.Name.Equals(aGroupLayerName, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
@@ -898,7 +1064,7 @@ namespace HLArcMapModule
             {
                 if (pLayer is IGroupLayer)
                 {
-                    if (pLayer.Name == aGroupLayerName)
+                    if (pLayer.Name.Equals(aGroupLayerName, StringComparison.OrdinalIgnoreCase))
                     {
                         return pLayer;
                     }
@@ -966,7 +1132,7 @@ namespace HLArcMapModule
             {
                 if (!(pLayer is IGroupLayer))
                 {
-                    if (pLayer.Name == aLayerName)
+                    if (pLayer.Name.Equals(aLayerName, StringComparison.OrdinalIgnoreCase))
                     {
                         pMap.DeleteLayer(pLayer);
                         return true;
@@ -997,6 +1163,53 @@ namespace HLArcMapModule
             pMap.DeleteLayer(aLayer);
             return true;
         }
+
+        public bool RemoveDataset(string aDatasetPath, string aDatasetSchema, string aDatasetName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aDatasetPath == null || aDatasetSchema == null || aDatasetName == null)
+            {
+                MessageBox.Show("Please pass valid dataset details", "Find Layer By Dataset");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Dataset");
+                return false;
+            }
+            IEnumLayer pLayers = pMap.Layers;
+
+            ILayer pLayer = pLayers.Next();
+
+            // Look through the layers and carry on until found,
+            // or we have reached the end of the list.
+            while (pLayer != null)
+            {
+                if (!(pLayer is IGroupLayer))
+                {
+                    if ((pLayer is IDataset) && !(pLayer is IRasterLayer))
+                    {
+                        IDataset pDataset = (IDataset)pLayer;
+                        IWorkspace pWorkspace = (IWorkspace)pDataset.Workspace;
+                        string strDatasetPath = pWorkspace.PathName;
+                        string strDatasetName = pDataset.Name;
+
+                        if (strDatasetPath.Equals(aDatasetPath, StringComparison.OrdinalIgnoreCase) &&
+                            strDatasetName.EndsWith(aDatasetSchema + "." + aDatasetName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            pMap.DeleteLayer(pLayer);
+                            return true;
+                        }
+
+                    }
+                }
+                pLayer = pLayers.Next();
+            }
+            return false;
+        }
         #endregion
 
 
@@ -1011,7 +1224,6 @@ namespace HLArcMapModule
             if (!LayerExists(aFeatureLayerName))
                 return false;
 
-            IActiveView activeView = GetActiveView();
             IFeatureLayer featureLayer = null;
             try
             {
@@ -1024,6 +1236,7 @@ namespace HLArcMapModule
                 return false;
             }
 
+            IActiveView activeView = GetActiveView();
             if (activeView == null || featureLayer == null || aWhereClause == null)
             {
                 if (Messages)
@@ -1031,16 +1244,14 @@ namespace HLArcMapModule
                 return false;
             }
 
-
             // do this with Geoprocessor.
-
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            object sev = null;
 
             IGeoProcessorResult myresult = new GeoProcessorResultClass();
 
             // Create a variant array to hold the parameter values.
             IVariantArray parameters = new VarArrayClass();
-
 
             // Populate the variant array with parameter values.
             parameters.Add(aFeatureLayerName);
@@ -1054,17 +1265,17 @@ namespace HLArcMapModule
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
-                // Wait for 1 second.
-                if (Messages)
-                {
-                    MessageBox.Show("Process complete");
-                }
+
                 gp = null;
                 return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                }
                 gp = null;
                 return false;
             }
@@ -1074,14 +1285,13 @@ namespace HLArcMapModule
         public bool SelectLayerByLocation(string aTargetLayer, string aSearchLayer, string anOverlapType = "INTERSECT", string aSearchDistance = "", string aSelectionType = "NEW_SELECTION", bool Messages = false)
         {
             // Implementation of python SelectLayerByLocation_management.
-
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            object sev = null;
 
             IGeoProcessorResult myresult = new GeoProcessorResultClass();
 
             // Create a variant array to hold the parameter values.
             IVariantArray parameters = new VarArrayClass();
-
 
             // Populate the variant array with parameter values.
             parameters.Add(aTargetLayer);
@@ -1104,17 +1314,17 @@ namespace HLArcMapModule
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
-                // Wait for 1 second.
-                if (Messages)
-                {
-                    MessageBox.Show("Process complete");
-                }
+
                 gp = null;
                 return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                }
                 gp = null;
                 return false;
             }
@@ -1229,12 +1439,13 @@ namespace HLArcMapModule
         }
 
         #region CopyFeatures
-        public bool CopyFeatures(string InFeatureClassOrLayer, string OutFeatureClass, bool Messages = false)
+        public bool CopyFeatures(string InFeatureClassOrLayer, string OutFeatureClass, string SortOrder, bool Messages = false)
         {
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
-            IGeoProcessorResult myresult = new GeoProcessorResultClass();
             object sev = null;
+
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
 
             // Create a variant array to hold the parameter values.
             IVariantArray parameters = new VarArrayClass();
@@ -1246,15 +1457,91 @@ namespace HLArcMapModule
             // Execute the tool.
             try
             {
-                myresult = (IGeoProcessorResult)gp.Execute("CopyFeatures_management", parameters, null);
+                if (SortOrder == "")
+                {
+                    myresult = (IGeoProcessorResult)gp.Execute("CopyFeatures_management", parameters, null);
+                }
+                else
+                {
+                    parameters.Add(SortOrder);
+                    myresult = (IGeoProcessorResult)gp.Execute("Sort_management", parameters, null);
+                }
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
-                    // Wait for 1 second.
+
+                gp = null;
+                myresult = null;
+                parameters = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
                 if (Messages)
                 {
-                    MessageBox.Show("Process complete");
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
                 }
+                gp = null;
+                return false;
+            }
+        }
+
+        public bool CopyFeatures(string InWorkspace, string InDatasetName, string OutFeatureClass, string SortOrder, bool Messages = false)
+        {
+            string inFeatureClass = InWorkspace + @"\" + InDatasetName;
+            return CopyFeatures(inFeatureClass, OutFeatureClass, SortOrder, Messages);
+        }
+
+        //public bool CopyFeatures(string InFeatureClass, string OutWorkspace, string OutDatasetName, string SortOrder, bool Messages = false)
+        //{
+        //    string outFeatureClass = OutWorkspace + @"\" + OutDatasetName;
+        //    return CopyFeatures(InFeatureClass, outFeatureClass, SortOrder, Messages);
+        //}
+
+        public bool CopyFeatures(string InWorkspace, string InDatasetName, string OutWorkspace, string OutDatasetName, string SortOrder, bool Messages = false)
+        {
+            string inFeatureClass = InWorkspace + @"\" + InDatasetName;
+            string outFeatureClass = OutWorkspace + @"\" + OutDatasetName;
+            return CopyFeatures(inFeatureClass, outFeatureClass, SortOrder, Messages);
+        }
+        #endregion
+
+        public bool CopyTable(string InTable, string OutTable, string SortOrder, bool Messages = false)
+        {
+            // This works absolutely fine for dbf and geodatabase but does not export to CSV.
+
+            // Note the csv export already removes ghe geometry field; in this case it is not necessary to check again.
+
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+            object sev = null;
+
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(InTable);
+            parameters.Add(OutTable);
+
+            // Execute the tool.
+            try
+            {
+                if (SortOrder == "")
+                {
+                    myresult = (IGeoProcessorResult)gp.Execute("CopyRows_management", parameters, null);
+                }
+                else
+                {
+                    parameters.Add(SortOrder);
+                    myresult = (IGeoProcessorResult)gp.Execute("Sort_management", parameters, null);
+                }
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+
                 gp = null;
                 return true;
             }
@@ -1270,28 +1557,11 @@ namespace HLArcMapModule
             }
         }
 
-        public bool CopyFeatures(string InWorkspace, string InDatasetName, string OutFeatureClass, bool Messages = false)
+        public bool AddSpatialIndex(string InFeatureClassOrLayer, bool Messages = false)
         {
-            string inFeatureClass = InWorkspace + @"\" + InDatasetName;
-            return CopyFeatures(inFeatureClass, OutFeatureClass, Messages);
-        }
-
-        public bool CopyFeatures(string InWorkspace, string InDatasetName, string OutWorkspace, string OutDatasetName, bool Messages = false)
-        {
-            string inFeatureClass = InWorkspace + @"\" + InDatasetName;
-            string outFeatureClass = OutWorkspace + @"\" + OutDatasetName;
-            return CopyFeatures(inFeatureClass, outFeatureClass, Messages);
-        }
-        #endregion
-
-        public bool CopyTable(string InTable, string OutTable, bool Messages = false)
-        {
-            // This works absolutely fine for dbf and geodatabase but does not export to CSV.
-
-            // Note the csv export already removes ghe geometry field; in this case it is not necessary to check again.
-
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
+            object sev = null;
 
             IGeoProcessorResult myresult = new GeoProcessorResultClass();
 
@@ -1299,30 +1569,27 @@ namespace HLArcMapModule
             IVariantArray parameters = new VarArrayClass();
 
             // Populate the variant array with parameter values.
-            parameters.Add(InTable);
-            parameters.Add(OutTable);
+            parameters.Add(InFeatureClassOrLayer);
 
             // Execute the tool.
             try
             {
-                myresult = (IGeoProcessorResult)gp.Execute("CopyRows_management", parameters, null);
+                myresult = (IGeoProcessorResult)gp.Execute("AddSpatialIndex_management", parameters, null);
 
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
-                    // Wait for 1 second.
 
-                
-                if (Messages)
-                {
-                    MessageBox.Show("Process complete");
-                }
                 gp = null;
                 return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                }
                 gp = null;
                 return false;
             }
@@ -1398,6 +1665,7 @@ namespace HLArcMapModule
         {
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
+            object sev = null;
 
             IGeoProcessorResult myresult = new GeoProcessorResultClass();
 
@@ -1417,119 +1685,63 @@ namespace HLArcMapModule
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
-                // Wait for 1 second.
-                if (Messages)
-                {
-                    MessageBox.Show("Process complete");
-                }
+
                 gp = null;
                 return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                }
                 gp = null;
                 return false;
             }
         }
 
-        public bool CopyToCSV(string InTable, string OutTable, bool Spatial, bool Append, bool Messages = false)
+        public bool DeleteTable(string InTable, bool Messages = false)
         {
-            // This sub copies the input table to CSV.
-            string aFilePath = myFileFuncs.GetDirectoryName(InTable);
-            string aTabName = myFileFuncs.GetFileName(InTable);
-            
-            ICursor myCurs = null;
-            IFields fldsFields = null;
-            if (Spatial)
-            {
-                
-                IFeatureClass myFC = GetFeatureClass(aFilePath, aTabName, true); 
-                myCurs = (ICursor)myFC.Search(null, false);
-                fldsFields = myFC.Fields;
-            }
-            else
-            {
-                ITable myTable = GetTable(aFilePath, aTabName, true);
-                myCurs = myTable.Search(null, false);
-                fldsFields = myTable.Fields;
-            }
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+            object sev = null;
 
-            if (myCurs == null)
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(InTable);
+
+            // Execute the tool. Note this only works with geodatabase tables.
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("Delete_management", parameters, null);
+
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+
+                gp = null;
+                return true;
+            }
+            catch (Exception ex)
             {
                 if (Messages)
                 {
-                    MessageBox.Show("Cannot open table " + InTable);
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
                 }
+                gp = null;
                 return false;
             }
-
-            // Open output file.
-            StreamWriter theOutput = new StreamWriter(OutTable, Append);
-
-            string strField = null;
-            string strHeader = "";
-            int intFieldCount = fldsFields.FieldCount;
-            int intIgnore = -1;
-            
-            // iterate through the fields in the collection to create header.
-            for (int i = 0; i < intFieldCount; i++)
-            {
-                // Get the field at the given index.
-                strField = fldsFields.get_Field(i).Name;
-                if (strField == "SP_GEOMETRY" || strField == "Shape")
-                    intIgnore = i;
-                else
-                    strHeader = strHeader + strField + ",";
-            }
-            if (!Append)
-            {
-                // Write the header.
-                strHeader = strHeader.Substring(0, strHeader.Length - 1);
-                theOutput.WriteLine(strHeader);
-            }
-            // Now write the file.
-            IRow aRow = myCurs.NextRow();
-            //MessageBox.Show("Writing ...");
-            while (aRow != null)
-            {
-                string strRow = "";
-                for (int i = 0; i < intFieldCount; i++)
-                {
-                    if (i != intIgnore)
-                    {
-                        var theValue = aRow.get_Value(i);
-                        // Wrap value if quotes if it is a string that contains a comma
-                        if ((theValue is string) &&
-                           (theValue.ToString().Contains(","))) theValue = "\"" + theValue.ToString() + "\"";
-                        strRow = strRow + theValue.ToString();
-                        if (i < intFieldCount - 1) strRow = strRow + ",";
-                    }
-                }
-                theOutput.WriteLine(strRow);
-                aRow = myCurs.NextRow();
-            }
-
-            theOutput.Close();
-            theOutput.Dispose();
-            myCurs = null;
-            aRow = null;
-            return true;
         }
 
-        public bool WriteEmptyCSV(string OutTable, string theHeader)
+        public bool CopyToCSV(string InTable, string OutTable, List<string> aFieldList, bool Spatial, bool Append, bool Messages = false)
         {
-            // Open output file.
-            StreamWriter theOutput = new StreamWriter(OutTable, false);
-            theOutput.Write(theHeader);
-            theOutput.Close();
-            theOutput.Dispose();
-            return true;
-        }
-
-        public bool CopyToTabDelimitedFile(string InTable, string OutTable, bool Spatial, bool Append, bool Messages = false)
-        {
-            // This sub copies the input table to tab delimited file.
+            // This sub copies the input table to CSV.
             string aFilePath = myFileFuncs.GetDirectoryName(InTable);
             string aTabName = myFileFuncs.GetFileName(InTable);
 
@@ -1561,43 +1773,154 @@ namespace HLArcMapModule
             // Open output file.
             StreamWriter theOutput = new StreamWriter(OutTable, Append);
 
-            string strField = null;
             string strHeader = "";
             int intFieldCount = fldsFields.FieldCount;
-            int intIgnore = -1;
+            List<Boolean> blIgnore = new List<Boolean>();
 
-            // iterate through the fields in the collection to create header.
+            // iterate through the fields in the collection to create header and determine which to ignore.
+            int intFieldTot = 0;
             for (int i = 0; i < intFieldCount; i++)
             {
                 // Get the field at the given index.
-                strField = fldsFields.get_Field(i).Name;
-                if (strField == "SP_GEOMETRY" || strField == "Shape")
-                    intIgnore = i;
+                IField pField = fldsFields.get_Field(i);
+                string strField = pField.Name;
+
+                // Does it exist in the 'keep' list or is it required?
+                if ((aFieldList.IndexOf(strField) == -1) ||
+                    (strField.ToUpper() == "SP_GEOMETRY") || (strField.ToLower() == "shape"))
+                    blIgnore.Add(true);
                 else
-                    strHeader = strHeader + strField + "\t";
+                {
+                    blIgnore.Add(false);
+                    strHeader = strHeader + strField + ",";
+                    intFieldTot = intFieldTot + 1;
+                }
             }
+
             if (!Append)
             {
                 // Write the header.
                 strHeader = strHeader.Substring(0, strHeader.Length - 1);
                 theOutput.WriteLine(strHeader);
             }
+
             // Now write the file.
             IRow aRow = myCurs.NextRow();
             //MessageBox.Show("Writing ...");
             while (aRow != null)
             {
                 string strRow = "";
+                int intField = 0;
                 for (int i = 0; i < intFieldCount; i++)
                 {
-                    if (i != intIgnore)
+                    if (blIgnore[i] == false)
                     {
                         var theValue = aRow.get_Value(i);
-                        // Wrap value if quotes if it is a string that contains a comma
+                        // Wrap value in quotes if it is a string that contains a comma.
                         if ((theValue is string) &&
                            (theValue.ToString().Contains(","))) theValue = "\"" + theValue.ToString() + "\"";
                         strRow = strRow + theValue.ToString();
-                        if (i < intFieldCount - 1) strRow = strRow + "\t";
+
+                        intField = intField + 1;
+                        if (intField < intFieldTot) strRow = strRow + ",";
+                    }
+                }
+                theOutput.WriteLine(strRow);
+                aRow = myCurs.NextRow();
+            }
+
+            theOutput.Close();
+            theOutput.Dispose();
+            myCurs = null;
+            aRow = null;
+            return true;
+        }
+
+        public bool WriteEmptyCSV(string OutTable, string theHeader)
+        {
+            // Open output file.
+            StreamWriter theOutput = new StreamWriter(OutTable, false);
+            theOutput.Write(theHeader);
+            theOutput.Close();
+            theOutput.Dispose();
+            return true;
+        }
+
+        public bool CopyToTabDelimitedFile(string InTable, string OutTable, List<string> aFieldList, bool Spatial, bool Append, bool Messages = false)
+        {
+            // This sub copies the input table to CSV with no headers.
+            string aFilePath = myFileFuncs.GetDirectoryName(InTable);
+            string aTabName = myFileFuncs.GetFileName(InTable);
+
+            ICursor myCurs = null;
+            IFields fldsFields = null;
+            if (Spatial)
+            {
+
+                IFeatureClass myFC = GetFeatureClass(aFilePath, aTabName, true);
+                myCurs = (ICursor)myFC.Search(null, false);
+                fldsFields = myFC.Fields;
+            }
+            else
+            {
+                ITable myTable = GetTable(aFilePath, aTabName, true);
+                myCurs = myTable.Search(null, false);
+                fldsFields = myTable.Fields;
+            }
+
+            if (myCurs == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Cannot open table " + InTable);
+                }
+                return false;
+            }
+
+            // Open output file.
+            StreamWriter theOutput = new StreamWriter(OutTable, Append);
+
+            int intFieldCount = fldsFields.FieldCount;
+            List<Boolean> blIgnore = new List<Boolean>();
+
+            // iterate through the fields in the collection to determine which to ignore.
+            int intFieldTot = 0;
+            for (int i = 0; i < intFieldCount; i++)
+            {
+                // Get the field at the given index.
+                IField pField = fldsFields.get_Field(i);
+                string strField = pField.Name;
+
+                // Does it exist in the 'keep' list or is it required?
+                if ((aFieldList.IndexOf(strField) == -1) ||
+                    (strField.ToUpper() == "SP_GEOMETRY") || (strField.ToLower() == "shape"))
+                    blIgnore.Add(true);
+                else
+                {
+                    blIgnore.Add(false);
+                    intFieldTot = intFieldTot + 1;
+                }
+            }
+
+            // Now write the file.
+            IRow aRow = myCurs.NextRow();
+            while (aRow != null)
+            {
+                string strRow = "";
+                int intField = 0;
+                for (int i = 0; i < intFieldCount; i++)
+                {
+                    if (blIgnore[i] == false)
+                    {
+                        var theValue = aRow.get_Value(i);
+                        //// Wrap value in quotes if it is a string that contains a comma.
+                        //if ((theValue is string) && (theValue.ToString().Contains(",")))
+                        //    theValue = "\"" + theValue.ToString() + "\"";
+                        // Wrap value in quotes.
+                        strRow = strRow + "\"" + theValue.ToString() + "\"";
+
+                        intField = intField + 1;
+                        if (intField < intFieldTot) strRow = strRow + ",";
                     }
                 }
                 theOutput.WriteLine(strRow);
@@ -1620,30 +1943,6 @@ namespace HLArcMapModule
             theOutput.Close();
             theOutput.Dispose();
             return true;
-        }
-
-        public void ShowTable(string aTableName, bool Messages = false)
-        {
-            if (aTableName == null)
-            {
-                if (Messages) MessageBox.Show("Please pass a table name", "Show Table");
-                return;
-            }
-
-            ITable myTable = GetTable(aTableName);
-            if (myTable == null)
-            {
-                if (Messages)
-                {
-                    MessageBox.Show("Table " + aTableName + " not found in map");
-                    return;
-                }
-            }
-
-            ITableWindow myWin = new TableWindow();
-            myWin.Table = myTable;
-            myWin.Application = thisApplication;
-            myWin.Show(true);
         }
 
         public void ToggleTOC()

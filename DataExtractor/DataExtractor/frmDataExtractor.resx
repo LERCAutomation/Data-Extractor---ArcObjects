@@ -117,8 +117,31 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="$this.Icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>Resources\$this.icon.ico;System.Drawing.Icon, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <metadata name="toolTip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        AAABAAEAEBAAAAEAIAAoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHZmVlBpU0PfW0k5/007K/8/LR3/MiAQ3ykW
+        BlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACEcmL/v62d//3y6P/w4NH/u6mZ/2pY
+        SP8xHw//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAMAAAADAAAAAQkX9v/93Lu//98uj/8ODR/7up
+        mf+EcmL/Piwc/wAAAAAAAAAAAAAAAAAAAAAAAAAAk5OTGuHh4fLh4eHyoqCgc5CAcf/dy7v//fLo//Dg
+        0f+7qZn/hHJi/0s5Kf8AAAAAAAAAAAAAAAAAAAAKAAAAKZGRkWbp6Of/sm8r/+Te2P+xqaH/zMC2//73
+        8v/z5tv/3c7B/7Cej/9ZRzf/AAAAAAAAAAAAAAAAkpKSTd/f3tnq6ej/6uno/6ZTAP+uZh3/3c28/9zX
+        0//gzr7/zLqq/7ellf+4ppb/x7Wl/wAAAAAAAAAKAAAAI9HR0dbElWb/plMA/6ZTAP+mUwD/plMA/69m
+        Hf/s6+r/yrio/7aklP+hj3//jHpq/7Gfj/8AAAAARDsyVmlZSb/p5N7/tHAt/9zHsv/u7u3/plMA/69n
+        Hv/h0cH/49rY77Sikv+gjn7/i3lp/4x6at+mk4NQAAAAAIJxZPLEsqL/8fDu//Lx8P/v5+D/8vLx/7Rx
+        Lf/t6OL/8fHvcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACRf2//2si4//bl1v//9/H/69rL//Ty
+        8f/v7u3/fXFm/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnIp6/9rIuP/25db///fx/+rY
+        yP/Br5//mIZ2/1E/L/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKaUhP/ayLj/9uXW///3
+        8f/q2Mj/wa+f/5iGdv9bSTn/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC/r6D/8+je//32
+        8P/57uT/8+ba//Tk1//ayLj/gG5e/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9+jc//Df
+        0P/m1MT/3Mq6/9G/r//HtaX/wK6e/9jGtv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOjY
+        yO/SwLD/yLam/72rm/+zoZH/qJaG/56MfP+2pJTvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AADq2s8wva2dr6mXh/+fjX3/lIJy/4p4aP+QfW2vz7+vMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAA
+</value>
   </data>
 </root>

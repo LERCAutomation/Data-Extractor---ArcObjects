@@ -47,7 +47,9 @@ namespace DataExtractor
             {
                 // Add it if it's not DataExtractor.xml.
                 string aFileName = myFileFuncs.GetFileName(aFile);
-                if (aFileName.ToLower() != "dataextractor.xml" && myFileFuncs.GetExtension(aFile).ToLower() == "xml")
+                if (aFileName.ToLower() != "dataextractor.xml" &&
+                    !myFileFuncs.ReturnWithoutExtension(aFile).Contains(".") &&
+                    myFileFuncs.GetExtension(aFile).ToLower() == "xml")
                 {
                     myFilteredFiles.Add(aFileName);
                     if (aFileName.ToLower() == DefaultXMLName.ToLower())
